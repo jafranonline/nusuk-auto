@@ -100,15 +100,32 @@ public class NusukAccessibilityService extends AccessibilityService {
     private long quizStartTime = 0;
     // When the optional pause between quizzes ends (0 = no pause pending). See QuizPace.
     private long nextQuizAt = 0;
+    // Large font sizes make the quiz and result pages taller than the screen: their buttons are
+    // then below the fold (or missing from the node tree until scrolled to).
+    private static final int MAX_PAGE_SCROLLS = 4;
+    private int pageScrolls = 0;          // scrolls on the current unknown quiz page
+    private int revealTries = 0;          // scrolls made to bring one button into view
+    private long roundStartedAt = 0;      // "Open the door" tapped; 0 after "Play again"
+    private Boolean seenResult = null;    // right/wrong read before a scroll could hide it
     private int quizReq = 0;               // id of the answer request in flight; late replies are ignored
     private String lastQuestion = null;
     private List<String> lastOptions = null;
     private String lastAnswer = null;      // the option we picked for lastQuestion
     private String lastSource = null;      // "local" | "server" | "ai" | "guess"
-    private boolean didScrollForQuestion = false;
-    // Read before the one scroll that reveals more options: after scrolling, the question can be
-    // above the visible area, so the top text would be an OPTION. Merged with the next read.
-    private QuizQuestionData preScrollRead = null;
+    // A question page taller than the screen (large font) is read top to bottom over several
+    // scrolls: Nusuk only exposes what is on screen. The question is the first text read.
+    private String scanQuestion = null;
+    private final List<String> scanOptions = new ArrayList<>();
+    private int scanScrolls = 0;
+    private int scanTopScrolls = 0;
+    private static final int MAX_SCAN_SCROLLS = 6;
+    // The chosen answer, pressed by its text: scrolled back into view if needed, then "Check
+    // your answer" (scrolled to if needed). Done step by step in the loop.
+    private String pendingAnswer = null;
+    private boolean answerTapped = false;
+    private int pendingMoves = 0;
+    private long pendingSince = 0;
+    private long pendingNextStepMs = 800;
     private long lastForegroundAttempt = 0;
     private volatile long lastAutoTapTime = 0; // last tap/click we made (to tell our side effects from the user's)
 
@@ -439,11 +456,15 @@ public class NusukAccessibilityService extends AccessibilityService {
         this.quizSolvingInProgress = false;
         this.quizReq++;
         this.nextQuizAt = 0;
+        this.pageScrolls = 0;
+        this.revealTries = 0;
+        this.roundStartedAt = 0;
+        this.seenResult = null;
         this.lastQuestion = null;
         this.lastAnswer = null;
         this.lastSource = null;
-        this.didScrollForQuestion = false;
-        this.preScrollRead = null;
+        resetScan();
+        this.pendingAnswer = null;
         if (mode == AutomationMode.QUIZ) {
             QuizBatch.reset();
             QuizSync.syncSoon(this); // newest shared answers before the first question
@@ -625,12 +646,31 @@ public class NusukAccessibilityService extends AccessibilityService {
                 Log.d(TAG, "Visible texts: " + (all.length() > 200 ? all.substring(0, 200) + "..." : all));
             }
 
+            boolean resultShown = screen.has("Play again");
+            if (pendingAnswer != null && !resultShown) {
+                stepPendingAnswer(screen);
+                return;
+            }
+            pendingAnswer = null;
+            if (quizSolvingInProgress && !resultShown) {
+                if (System.currentTimeMillis() - quizStartTime > QUIZ_TIMEOUT_MS) {
+                    Log.w(TAG, "Quiz answer timeout -> dropping that request, re-reading the question");
+                    quizSolvingInProgress = false;
+                    quizReq++;
+                    resetScan();
+                } else {
+                    scheduleNextStep(200);
+                    return;
+                }
+            }
+
             // 1. RESULT SCREEN: "Play again"
             Item playAgainBtn = screen.find("Play again");
             if (playAgainBtn != null) {
                 Log.i(TAG, "Detected Result Screen (Play again button found)");
                 if (lastQuestion != null) {
-                    boolean isCorrect = isQuizResultCorrect(screen);
+                    boolean isCorrect = seenResult != null ? seenResult : isQuizResultCorrect(screen);
+                    seenResult = null;
 
                     QuizStore store = QuizStore.get(this);
                     if (isCorrect) {
@@ -662,6 +702,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                     quizSolvingInProgress = false;
 
                     if (targetBatchCount > 0 && batchProcessed >= targetBatchCount) {
+                        notifyProgress("Done"); // show the final count (e.g. 2 / 2) before stopping
                         stopAutomation("Done (" + batchProcessed + " quizzes, " + quizCorrectCount + " ✓)");
                         return;
                     }
@@ -678,6 +719,13 @@ public class NusukAccessibilityService extends AccessibilityService {
                 }
                 nextQuizAt = 0;
 
+                if (revealIfHidden(playAgainBtn, screen)) {
+                    notifyProgress("Scrolling to Play again...");
+                    scheduleNextStep(500);
+                    return;
+                }
+                pageScrolls = 0;
+                roundStartedAt = 0;
                 notifyProgress("Playing next quiz (" + batchProcessed + "/" + targetBatchCount + ")...");
                 tapNode(playAgainBtn.node);
                 scheduleNextStep(800);
@@ -689,44 +737,59 @@ public class NusukAccessibilityService extends AccessibilityService {
             if (openDoorBtn != null) {
                 Log.i(TAG, "Detected Modal: 'Open the door'");
                 notifyProgress("Confirming door...");
+                roundStartedAt = System.currentTimeMillis();
+                pageScrolls = 0;
                 tapNode(openDoorBtn.node);
                 scheduleNextStep(700);
                 return;
             }
 
-            // 3. QUIZ QUESTION SCREEN: "Check your answer"
-            if (screen.has("Check your answer")) {
+            // 3. QUIZ QUESTION SCREEN: "Check your answer" (it can be below the fold: after "Open the
+            // door" and before an answer, a page that isn't a result is the question page)
+            boolean questionPage = screen.has("Check your answer")
+                    || (roundStartedAt > 0 && lastQuestion == null && screen.items.size() >= 8
+                        && !screen.has("Choose a door") && !screen.has("Start the challenge"));
+            if (questionPage) {
                 if (DEBUG) Log.d(TAG, "Quiz Question Screen");
-                if (quizSolvingInProgress) {
-                    if (System.currentTimeMillis() - quizStartTime > QUIZ_TIMEOUT_MS) {
-                        Log.w(TAG, "Quiz answer timeout -> dropping that request, re-reading the question");
-                        quizSolvingInProgress = false;
-                        quizReq++;
-                    } else {
-                        scheduleNextStep(200);
-                        return;
-                    }
-                }
+                pageScrolls = 0;
 
-                QuizQuestionData data = extractQuizData(screen);
-                if (didScrollForQuestion && preScrollRead != null) data = mergeAfterScroll(preScrollRead, data);
-                if (data == null || data.question == null || data.options.size() < 2) {
-                    if (DEBUG) Log.d(TAG, "Not enough quiz options visible -> scrolling down");
-                    scrollDown();
+                // A new read starts at the top of the page, where the question is.
+                if (scanQuestion == null && scanTopScrolls < MAX_SCAN_SCROLLS && canScrollUp(screen)) {
+                    scanTopScrolls++;
+                    scrollPageUp(screen);
                     scheduleNextStep(400);
                     return;
                 }
-
-                if (data.options.size() < 4 && !didScrollForQuestion) {
-                    if (DEBUG) Log.d(TAG, "Found " + data.options.size() + " options, scrolling once to reveal more");
-                    didScrollForQuestion = true;
-                    preScrollRead = data;
-                    scrollDown();
-                    scheduleNextStep(350);
+                scanTopScrolls = 0;
+                QuizQuestionData read = extractQuizData(screen);
+                if (read != null) addToScan(read);
+                // Keep reading down while options may be below the fold.
+                if (scanOptions.size() < 4 && canScrollDown(screen) && scanScrolls < MAX_SCAN_SCROLLS) {
+                    scanScrolls++;
+                    Log.i(TAG, "Question page: " + scanOptions.size() + " options so far -> scrolling down (" + scanScrolls + ")");
+                    scrollPage(screen);
+                    scheduleNextStep(450);
                     return;
                 }
-                didScrollForQuestion = false;
-                preScrollRead = null;
+                if (scanQuestion == null || scanOptions.size() < 2) {
+                    if (scanScrolls < MAX_SCAN_SCROLLS) {
+                        scanScrolls++;
+                        if (DEBUG) Log.d(TAG, "Not enough quiz options visible -> scrolling down");
+                        scrollPage(screen);
+                        scheduleNextStep(400);
+                        return;
+                    }
+                    Log.w(TAG, "Couldn't read the question's options -> reading again from the top");
+                    resetScan();
+                    scrollPageUp(screen);
+                    scheduleNextStep(600);
+                    return;
+                }
+                QuizQuestionData data = new QuizQuestionData();
+                data.question = scanQuestion;
+                data.options.addAll(scanOptions);
+                if (scanScrolls > 0) Log.i(TAG, "Question read over " + (scanScrolls + 1) + " screens: " + data.options.size() + " options");
+                resetScan();
 
                 quizSolvingInProgress = true;
                 quizStartTime = System.currentTimeMillis();
@@ -734,8 +797,6 @@ public class NusukAccessibilityService extends AccessibilityService {
                 lastQuestion = data.question;
                 final List<String> currentOpts = new ArrayList<>(data.options);
                 lastOptions = currentOpts;
-                final List<Rect> currentBounds = new ArrayList<>(data.optionBounds);
-                final List<AccessibilityNodeInfo> currentNodes = new ArrayList<>(data.optionNodes);
 
                 String preview = data.question.length() > 30 ? data.question.substring(0, 30) + "..." : data.question;
                 final String question = data.question;
@@ -751,7 +812,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                     lastSource = known.source;
                     Log.i(TAG, "Known answer (" + known.source + ") -> Option " + idx);
                     notifyProgress("Selected (saved): " + known.answer);
-                    selectAndCheck(req, idx, currentOpts, currentNodes, currentBounds, 800);
+                    selectAndCheck(req, idx, currentOpts, 800);
                     QuizBatch.answeredLocally(this, batchDenied);
                     return;
                 }
@@ -770,7 +831,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                         lastAnswer = currentOpts.get(matchIdx);
                         lastSource = cached ? "server" : "ai";
                         QuizStore.get(NusukAccessibilityService.this).putUnverified(question, lastAnswer, lastSource);
-                        selectAndCheck(req, matchIdx, currentOpts, currentNodes, currentBounds, 800);
+                        selectAndCheck(req, matchIdx, currentOpts, 800);
                     }
 
                     @Override
@@ -793,7 +854,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                         Log.e(TAG, "QuizSolver error: " + errorMessage + " -> guessing option " + g);
                         lastAnswer = currentOpts.get(g);
                         lastSource = "guess";
-                        selectAndCheck(req, g, currentOpts, currentNodes, currentBounds, 600);
+                        selectAndCheck(req, g, currentOpts, 600);
                     }
                 }));
                 return;
@@ -814,6 +875,23 @@ public class NusukAccessibilityService extends AccessibilityService {
                     Log.i(TAG, "Choose a Door -> Door " + (door + 1) + " at scaled (" + x + ", " + y + ")");
                     tapCoordinates(x, y);
                 }
+                scheduleNextStep(600);
+                return;
+            }
+
+            // 4b. TALL QUIZ / RESULT PAGE: with a large font size the question's "Check your answer"
+            // or the result's "Play again" can sit below the fold, so the page isn't recognised.
+            // Mid-round, scroll down to find them before treating the page as unknown.
+            boolean midRound = lastQuestion != null
+                    || (roundStartedAt > 0 && System.currentTimeMillis() - roundStartedAt < 120_000);
+            if (midRound && pageScrolls < MAX_PAGE_SCROLLS && canScrollDown(screen)) {
+                if (lastQuestion != null && seenResult == null && looksLikeResult(screen)) {
+                    seenResult = isQuizResultCorrect(screen); // read it now: scrolling may hide it
+                }
+                pageScrolls++;
+                Log.i(TAG, "Quiz page taller than the screen -> scrolling down (" + pageScrolls + ")");
+                notifyProgress("Scrolling down...");
+                scrollPage(screen);
                 scheduleNextStep(600);
                 return;
             }
@@ -1125,48 +1203,6 @@ public class NusukAccessibilityService extends AccessibilityService {
     private final QuizBatch.DeniedListener batchDenied = (code, message) ->
             handler.post(safe(() -> { if (isRunning && currentMode == AutomationMode.QUIZ) handleQuizDenied(code, message); }));
 
-    /**
-     * After the scroll that reveals more options: keep the question from the read BEFORE the
-     * scroll (it may now be off the top, which would turn option 1 into the "question"), and take
-     * the options in order from both reads. Bounds/nodes come from the fresh read when possible.
-     */
-    private QuizQuestionData mergeAfterScroll(QuizQuestionData before, QuizQuestionData after) {
-        if (before == null || before.question == null) return after;
-        QuizQuestionData m = new QuizQuestionData();
-        m.question = before.question;
-        List<String> seen = new ArrayList<>();
-        // fresh items (current positions) by text
-        java.util.Map<String, Integer> freshIdx = new java.util.HashMap<>();
-        List<String> freshTexts = new ArrayList<>();
-        if (after != null) {
-            if (after.question != null) freshTexts.add(after.question);
-            freshTexts.addAll(after.options);
-        }
-        for (String o : before.options) addOption(m, o, before, after, seen);
-        for (String t : freshTexts) {
-            if (m.options.size() >= 4) break;
-            if (t == null || t.equals(m.question)) continue;
-            addOption(m, t, before, after, seen);
-        }
-        if (after != null && !before.question.equals(after.question))
-            Log.i(TAG, "Question kept from before the scroll: '" + before.question + "' (top after scroll: '" + after.question + "')");
-        return m;
-    }
-
-    private static void addOption(QuizQuestionData m, String text, QuizQuestionData before, QuizQuestionData after, List<String> seen) {
-        if (text == null || seen.contains(text)) return;
-        seen.add(text);
-        m.options.add(text);
-        int i = after != null ? after.options.indexOf(text) : -1;
-        if (i >= 0) { m.optionBounds.add(after.optionBounds.get(i)); m.optionNodes.add(after.optionNodes.get(i)); return; }
-        if (after != null && text.equals(after.question) && after.questionItem != null) {
-            m.optionBounds.add(new Rect(after.questionItem.bounds)); m.optionNodes.add(after.questionItem.node); return;
-        }
-        int j = before.options.indexOf(text);
-        m.optionBounds.add(j >= 0 ? before.optionBounds.get(j) : new Rect());
-        m.optionNodes.add(j >= 0 ? before.optionNodes.get(j) : null);
-    }
-
     private QuizQuestionData extractQuizData(Screen screen) {
         int minTop = sy(300); // skip the header bar
         List<Item> valid = new ArrayList<>();
@@ -1240,6 +1276,75 @@ public class NusukAccessibilityService extends AccessibilityService {
     private String normalizeText(String text) {
         if (text == null) return "";
         return text.replaceAll("[ﷺ’'\"“”.,;:!?-]", " ").replaceAll("\\s+", " ").trim();
+    }
+
+    /** Is `it` (its centre) on the screen and shown to the user? */
+    private boolean onScreen(Item it) {
+        return it.node.isVisibleToUser() && !it.bounds.isEmpty()
+                && it.bounds.centerY() >= 0 && it.bounds.centerY() < screenH;
+    }
+
+    /** The scrollable node that can still move down, i.e. the page is taller than the screen. */
+    private Item scrollableDown(Screen screen) {
+        for (Item it : screen.items) {
+            if (it.node.isScrollable()
+                    && it.node.getActionList().contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_FORWARD)) {
+                return it;
+            }
+        }
+        return null;
+    }
+
+    private boolean canScrollDown(Screen screen) {
+        return scrollableDown(screen) != null;
+    }
+
+    private boolean canScrollUp(Screen screen) {
+        for (Item it : screen.items) {
+            if (it.node.isScrollable()
+                    && it.node.getActionList().contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)) return true;
+        }
+        return false;
+    }
+
+    /** Scroll the page up one screen. False if it is already at the top. */
+    private boolean scrollPageUp(Screen screen) {
+        for (Item it : screen.items) {
+            if (it.node.isScrollable()
+                    && it.node.getActionList().contains(AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_BACKWARD)) {
+                return it.node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD);
+            }
+        }
+        return false;
+    }
+
+    /** Scroll the page down one screen: the page's own scroll action, else a swipe. */
+    private void scrollPage(Screen screen) {
+        Item sc = scrollableDown(screen);
+        if (sc == null || !sc.node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) scrollDown();
+    }
+
+    /**
+     * If the button is off screen, start bringing it into view and return true (press it on a
+     * later step). After a few tries it is pressed anyway (an accessibility click works off screen).
+     */
+    private boolean revealIfHidden(Item btn, Screen screen) {
+        if (onScreen(btn) || revealTries >= 3) {
+            revealTries = 0;
+            return false;
+        }
+        revealTries++;
+        Log.i(TAG, "'" + btn.text + "' is off screen -> scrolling to it (" + revealTries + ")");
+        if (!btn.node.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.getId())) {
+            scrollPage(screen);
+        }
+        return true;
+    }
+
+    /** Right/wrong verdict words of the result page. */
+    private static boolean looksLikeResult(Screen screen) {
+        String all = screen.allTextLower();
+        return all.contains("correct") || all.contains("wrong") || all.contains("better luck");
     }
 
     private void scrollDown() {
@@ -1486,32 +1591,82 @@ public class NusukAccessibilityService extends AccessibilityService {
     }
 
     /**
-     * Tap the chosen option, then "Check your answer" 250ms later, then resume the loop.
-     * The option is looked up again on the CURRENT screen by its text (the nodes captured
-     * before a network call may be stale); the captured node/bounds are only the fallback.
+     * Press the chosen option, then "Check your answer". Both are found by their text on the
+     * CURRENT screen; on a page taller than the screen they are scrolled into view first.
      */
-    private void selectAndCheck(int req, int idx, List<String> opts, List<AccessibilityNodeInfo> nodes,
-                                List<Rect> bounds, long nextStepMs) {
-        Item fresh = null;
-        if (idx >= 0 && idx < opts.size()) {
-            String want = opts.get(idx);
-            for (Item it : snapshot().items) {
-                if (it.text.equals(want)) { fresh = it; break; }
+    private void selectAndCheck(int req, int idx, List<String> opts, long nextStepMs) {
+        if (req != quizReq || !isRunning || idx < 0 || idx >= opts.size()) return;
+        pendingAnswer = opts.get(idx);
+        answerTapped = false;
+        pendingMoves = 0;
+        pendingSince = System.currentTimeMillis();
+        pendingNextStepMs = nextStepMs;
+        stepPendingAnswer(snapshot());
+    }
+
+    private void stepPendingAnswer(Screen screen) {
+        if (System.currentTimeMillis() - pendingSince > 20_000 || pendingMoves > 14) {
+            Log.w(TAG, "Couldn't press the answer / Check your answer -> reading the question again");
+            pendingAnswer = null;
+            quizSolvingInProgress = false;
+            quizReq++;
+            lastQuestion = null; // nothing was submitted
+            resetScan();
+            scrollPageUp(screen);
+            scheduleNextStep(600);
+            return;
+        }
+        if (!answerTapped) {
+            Item opt = null;
+            for (Item it : screen.items) if (it.text.equals(pendingAnswer)) { opt = it; break; }
+            if (opt != null && onScreen(opt)) {
+                tapNode(opt.node);
+                answerTapped = true;
+                scheduleNextStep(250);
+                return;
             }
+            pendingMoves++;
+            if (opt != null && opt.node.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.getId())) {
+                scheduleNextStep(400);
+                return;
+            }
+            // Not on screen: the page was read top to bottom, so the option is above.
+            Log.i(TAG, "Chosen option is off screen -> scrolling up to it");
+            if (!scrollPageUp(screen)) scrollPage(screen);
+            scheduleNextStep(450);
+            return;
         }
-        if (fresh != null) {
-            tapNode(fresh.node);
-        } else if (idx >= 0 && idx < nodes.size() && nodes.get(idx) != null) {
-            tapNode(nodes.get(idx));
-        } else if (idx >= 0 && idx < bounds.size() && !bounds.get(idx).isEmpty()) {
-            Rect b = bounds.get(idx);
-            tapCoordinates(b.centerX(), b.centerY());
+        Item check = screen.find("Check your answer");
+        if (check != null && onScreen(check)) {
+            tapNode(check.node);
+            pendingAnswer = null;
+            scheduleNextStep(pendingNextStepMs);
+            return;
         }
-        handler.postDelayed(safe(() -> {
-            if (req != quizReq || !isRunning) return;
-            tapCheckAnswer();
-            scheduleNextStep(nextStepMs);
-        }), 250);
+        pendingMoves++;
+        Log.i(TAG, "'Check your answer' is off screen -> scrolling down to it");
+        if (check == null || !check.node.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.getId())) {
+            scrollPage(screen);
+        }
+        scheduleNextStep(450);
+    }
+
+    private void resetScan() {
+        scanQuestion = null;
+        scanOptions.clear();
+        scanScrolls = 0;
+    }
+
+    /** Adds one screen's read to the question being scanned (the first text ever read is the question). */
+    private void addToScan(QuizQuestionData read) {
+        List<String> texts = new ArrayList<>();
+        if (read.question != null) texts.add(read.question);
+        texts.addAll(read.options);
+        for (String t : texts) {
+            if (scanQuestion == null) { scanQuestion = t; continue; }
+            if (t.equals(scanQuestion) || scanOptions.contains(t) || scanOptions.size() >= 4) continue;
+            scanOptions.add(t);
+        }
     }
 
     /** No access (limit reached, quiz paused...): stop, never guess. The stop reason is the
@@ -1520,16 +1675,6 @@ public class NusukAccessibilityService extends AccessibilityService {
         if (currentMode != AutomationMode.QUIZ) return; // quiz limits never touch adding codes
         quizSolvingInProgress = false;
         stopAutomation(message);
-    }
-
-    /** Press "Check your answer" if it is on screen. Never taps a fixed spot. */
-    private void tapCheckAnswer() {
-        Item btn = snapshot().find("Check your answer");
-        if (btn != null) {
-            tapNode(btn.node);
-            return;
-        }
-        if (DEBUG) Log.d(TAG, "'Check your answer' not on screen (already submitted?) -> not tapping");
     }
 
     private void tapCoordinates(int x, int y) {

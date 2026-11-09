@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mini switch, ON: filled track, thumb right -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#5B9BD5" />
+            <corners android:radius="9dp" />
+        </shape>
+    </item>
+    <item android:width="14dp" android:height="14dp" android:gravity="end|center_vertical" android:end="2dp">
+        <shape android:shape="oval">
+            <solid android:color="#FFFFFF" />
+        </shape>
+    </item>
+</layer-list>

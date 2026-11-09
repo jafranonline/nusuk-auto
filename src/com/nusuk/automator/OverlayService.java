@@ -41,10 +41,13 @@ public class OverlayService extends Service implements NusukAccessibilityService
     private Button btnCountPlus;
     private EditText etCount;
     private Button btnAction;
-    private View rowPace;
-    private TextView btnPace;
+    private View rowPace, rowMode, rowCount;
+    private Button btnPause;
+    private View btnClose;
+    private boolean runningUi = false;
+    private View btnPace;
     private boolean updatingCount = false;
-    private static final int DEFAULT_BATCH = 50, MAX_BATCH = 9999, STEP = 10;
+    private static final int DEFAULT_BATCH = 100, MAX_BATCH = 9999, STEP = 10;
 
     private NusukAccessibilityService.AutomationMode selectedMode = NusukAccessibilityService.AutomationMode.CODES;
     private int selectedBatchCount = DEFAULT_BATCH;
@@ -161,7 +164,11 @@ public class OverlayService extends Service implements NusukAccessibilityService
 
     private void initOverlayView() {
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        LayoutInflater inflater = LayoutInflater.from(this);
+        // The panel has fixed-height rows: a phone's large font size would clip its labels, so it
+        // is drawn at the normal font scale (Display size still applies).
+        android.content.res.Configuration cfg = new android.content.res.Configuration(getResources().getConfiguration());
+        cfg.fontScale = 1f;
+        LayoutInflater inflater = LayoutInflater.from(createConfigurationContext(cfg));
         overlayView = inflater.inflate(R.layout.overlay_layout, null);
 
         int layoutType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
@@ -196,8 +203,15 @@ public class OverlayService extends Service implements NusukAccessibilityService
         etCount = overlayView.findViewById(R.id.etCount);
         btnAction = overlayView.findViewById(R.id.btnAction);
         rowPace = overlayView.findViewById(R.id.rowPace);
+        rowMode = overlayView.findViewById(R.id.rowMode);
+        rowCount = overlayView.findViewById(R.id.rowCount);
+        btnPause = overlayView.findViewById(R.id.btnPause);
+        btnPause.setOnClickListener(v -> {
+            NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+            if (s != null && s.isRunning()) s.pauseAutomation(); // toggles; the label follows onProgress
+        });
         btnPace = overlayView.findViewById(R.id.btnPace);
-        btnPace.setOnClickListener(v -> {
+        rowPace.setOnClickListener(v -> {
             QuizPace.setOn(this, !QuizPace.isOn(this));
             renderPace();
         });
@@ -257,7 +271,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
         View btnMin = overlayView.findViewById(R.id.btnMinimize);
         if (btnMin != null) btnMin.setOnClickListener(v -> { commitCountInput(); minimize(); });
         if (overlayBadge != null) overlayBadge.setOnClickListener(v -> expand());
-        View btnClose = overlayView.findViewById(R.id.btnClose);
+        btnClose = overlayView.findViewById(R.id.btnClose);
         if (btnClose != null) btnClose.setOnClickListener(v -> stopSelf());
 
         // Draggable touch handling on Header and Badge. A touch that barely moves is a
@@ -327,7 +341,20 @@ public class OverlayService extends Service implements NusukAccessibilityService
         setWindowFocusable(false);
     }
 
+    /** While a run is going only the status, progress and Pause/Stop show; the setup rows come back after. */
+    private void setRunningUi(boolean running) {
+        if (runningUi == running) return;
+        runningUi = running;
+        int setup = running ? View.GONE : View.VISIBLE;
+        if (rowMode != null) rowMode.setVisibility(setup);
+        if (rowCount != null) rowCount.setVisibility(setup);
+        if (rowPace != null) rowPace.setVisibility(running || selectedMode != NusukAccessibilityService.AutomationMode.QUIZ ? View.GONE : View.VISIBLE);
+        if (btnPause != null) btnPause.setVisibility(running ? View.VISIBLE : View.GONE);
+        if (btnClose != null) btnClose.setVisibility(running ? View.GONE : View.VISIBLE); // only minimize while running
+    }
+
     private void setActionIdle() {
+        setRunningUi(false);
         if (btnAction == null) return;
         btnAction.setText(selectedMode == NusukAccessibilityService.AutomationMode.QUIZ ? "▶  Start quiz" : "▶  Start codes");
         btnAction.setBackgroundResource(R.drawable.ov_start_btn);
@@ -335,8 +362,11 @@ public class OverlayService extends Service implements NusukAccessibilityService
     }
 
     private void setActionRunning(int done, int target) {
+        setRunningUi(true);
+        NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+        if (btnPause != null) btnPause.setText(s != null && s.isPaused() ? "▶  Resume" : "❚❚  Pause");
         if (btnAction == null) return;
-        btnAction.setText("■  Stop  (" + done + "/" + target + ")");
+        btnAction.setText("■  Stop");
         btnAction.setBackgroundResource(R.drawable.button_stop);
         btnAction.setTextColor(0xFFFFFFFF);
     }
@@ -352,7 +382,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
             btnModeQuiz.setBackgroundResource(!isCodes ? R.drawable.chip_selected : R.drawable.chip_unselected);
             btnModeQuiz.setTextColor(!isCodes ? 0xFFFFFFFF : 0xFFAFC4DA);
         }
-        if (rowPace != null) rowPace.setVisibility(isCodes ? View.GONE : View.VISIBLE);
+        if (rowPace != null) rowPace.setVisibility(isCodes || runningUi ? View.GONE : View.VISIBLE);
 
         updateUiStats();
     }
@@ -360,9 +390,8 @@ public class OverlayService extends Service implements NusukAccessibilityService
     private void renderPace() {
         if (btnPace == null) return;
         boolean on = QuizPace.isOn(this);
-        btnPace.setText(on ? "ON" : "OFF");
-        btnPace.setBackgroundResource(on ? R.drawable.chip_selected : R.drawable.chip_unselected);
-        btnPace.setTextColor(on ? 0xFFFFFFFF : 0xFFAFC4DA);
+        btnPace.setBackgroundResource(on ? R.drawable.ov_switch_on : R.drawable.ov_switch_off);
+        rowPace.setContentDescription("Delay between quizzes: " + (on ? "on" : "off"));
     }
 
     private void selectBatch(int count) {
