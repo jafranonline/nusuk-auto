@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="150dp" android:height="150dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:strokeColor="#2E3A6A98" android:strokeWidth="0.5" android:pathData="M24,1L30.74,7.74L40.26,7.74L40.26,17.26L47,24L40.26,30.74L40.26,40.26L30.74,40.26L24,47L17.26,40.26L7.74,40.26L7.74,30.74L1,24L7.74,17.26L7.74,7.74L17.26,7.74Z" />
+    <group android:pivotX="24" android:pivotY="24" android:scaleX="0.74" android:scaleY="0.74">
+        <path android:strokeColor="#2E3A6A98" android:strokeWidth="0.6" android:pathData="M24,1L30.74,7.74L40.26,7.74L40.26,17.26L47,24L40.26,30.74L40.26,40.26L30.74,40.26L24,47L17.26,40.26L7.74,40.26L7.74,30.74L1,24L7.74,17.26L7.74,7.74L17.26,7.74Z" />
+    </group>
+    <group android:pivotX="24" android:pivotY="24" android:scaleX="0.48" android:scaleY="0.48">
+        <path android:strokeColor="#2E3A6A98" android:strokeWidth="0.8" android:pathData="M24,1L30.74,7.74L40.26,7.74L40.26,17.26L47,24L40.26,30.74L40.26,40.26L30.74,40.26L24,47L17.26,40.26L7.74,40.26L7.74,30.74L1,24L7.74,17.26L7.74,7.74L17.26,7.74Z" />
+    </group>
+</vector>

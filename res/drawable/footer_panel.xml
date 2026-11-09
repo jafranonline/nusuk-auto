@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item><shape android:shape="rectangle">
+        <gradient android:angle="270" android:startColor="#E3ECF5" android:endColor="#F1F6FA" />
+        <corners android:topLeftRadius="24dp" android:topRightRadius="24dp" />
+    </shape></item>
+    <item android:drawable="@drawable/noise_overlay" />
+</layer-list>

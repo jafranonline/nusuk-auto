@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Nusuk Auto</string>
+    <string name="accessibility_service_description">Automates code injection and quiz gameplay for the Nusuk app.</string>
+    <string name="api_base" translatable="false">https://nusuk.minbars.net</string>
+</resources>

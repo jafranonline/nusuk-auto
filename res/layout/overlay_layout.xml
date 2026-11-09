@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <!-- Collapsed pill: logo + title + progress -->
+    <LinearLayout
+        android:id="@+id/overlayBadge"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:background="@drawable/overlay_badge_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="14dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_logo" />
+
+        <TextView
+            android:fontFamily="@font/plex_light"
+            android:includeFontPadding="false"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Nusuk Auto"
+            android:textColor="#F5F5F4"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvBadgeCount"
+            android:fontFamily="@font/plex_light"
+            android:fontFeatureSettings="tnum"
+            android:includeFontPadding="false"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:text="0 / 50"
+            android:textColor="#A9D3F0"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- Expanded panel -->
+    <LinearLayout
+        android:id="@+id/overlayPanel"
+        android:clipToOutline="true"
+        android:layout_width="240dp"
+        android:layout_height="wrap_content"
+        android:background="@drawable/overlay_panel_bg"
+        android:orientation="vertical"
+        android:padding="10dp"
+        android:visibility="visible">
+
+        <!-- Draggable header -->
+        <LinearLayout
+            android:id="@+id/overlayHeader"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_marginBottom="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_logo" />
+
+            <TextView
+                android:id="@+id/tvOverlayTitle"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:text="Nusuk Auto"
+                android:textColor="#F5F5F4"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/btnMinimize"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:gravity="center"
+                android:text="—"
+                android:textColor="#AFC4DA"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/btnClose"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:gravity="center"
+                android:text="✕"
+                android:textColor="#AFC4DA"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- Mode segmented control -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="34dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/ov_segment_bg"
+            android:orientation="horizontal"
+            android:padding="3dp">
+
+            <Button
+                android:id="@+id/btnModeCodes"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:textAllCaps="false"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/chip_unselected"
+                android:padding="0dp"
+                android:text="Codes"
+                android:textColor="#AFC4DA"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnModeQuiz"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:textAllCaps="false"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/chip_selected"
+                android:padding="0dp"
+                android:text="Quiz"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Status + progress -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/status_row_bg"
+            android:gravity="center_vertical"
+            android:minHeight="40dp"
+            android:orientation="horizontal"
+            android:paddingBottom="7dp"
+            android:paddingEnd="12dp"
+            android:paddingStart="10dp"
+            android:paddingTop="7dp">
+
+            <View
+                android:layout_width="7dp"
+                android:layout_height="7dp"
+                android:background="@drawable/dot_sky" />
+
+            <TextView
+                android:id="@+id/tvOverlayStatus"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_marginStart="7dp"
+                android:layout_weight="1"
+                android:autoSizeMaxTextSize="13sp"
+                android:autoSizeMinTextSize="9sp"
+                android:autoSizeStepGranularity="0.5sp"
+                android:autoSizeTextType="uniform"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:text="Ready"
+                android:textColor="#D3E1EF" />
+
+            <TextView
+                android:id="@+id/tvProgress"
+                android:fontFamily="@font/plex_light"
+                android:fontFeatureSettings="tnum"
+                android:includeFontPadding="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:text="0 / 50"
+                android:textColor="#A9D3F0"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <!-- Dynamic count: [-] [input] [+] -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="38dp"
+            android:layout_marginBottom="8dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnCountMinus"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:layout_width="44dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/ov_step_btn"
+                android:padding="0dp"
+                android:text="−"
+                android:textColor="#F5F5F4"
+                android:textSize="20sp" />
+
+            <EditText
+                android:id="@+id/etCount"
+                android:fontFamily="@font/plex_light"
+                android:fontFeatureSettings="tnum"
+                android:includeFontPadding="false"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="6dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/ov_input_bg"
+                android:gravity="center"
+                android:imeOptions="actionDone"
+                android:inputType="number"
+                android:maxLength="4"
+                android:padding="0dp"
+                android:selectAllOnFocus="true"
+                android:text="50"
+                android:textColor="#FFFFFF"
+                android:textCursorDrawable="@null"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/btnCountPlus"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:layout_width="44dp"
+                android:layout_height="match_parent"
+                android:background="@drawable/ov_step_btn"
+                android:padding="0dp"
+                android:text="+"
+                android:textColor="#F5F5F4"
+                android:textSize="20sp" />
+        </LinearLayout>
+
+        <!-- Quiz only: optional random 2-6 s pause between quizzes -->
+        <LinearLayout
+            android:id="@+id/rowPace"
+            android:layout_width="match_parent"
+            android:layout_height="34dp"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/ov_segment_bg"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingEnd="3dp"
+            android:paddingStart="10dp">
+
+            <TextView
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:text="Pause 2–6s between quizzes"
+                android:textColor="#D3E1EF"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/btnPace"
+                android:fontFamily="@font/plex_light"
+                android:includeFontPadding="false"
+                android:layout_width="48dp"
+                android:layout_height="28dp"
+                android:background="@drawable/chip_selected"
+                android:gravity="center"
+                android:text="ON"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- Start / Stop -->
+        <Button
+            android:id="@+id/btnAction"
+            android:fontFamily="@font/plex_light"
+            android:includeFontPadding="false"
+            android:textAllCaps="false"
+            android:layout_width="match_parent"
+            android:layout_height="42dp"
+            android:background="@drawable/ov_start_btn"
+            android:padding="0dp"
+            android:text="▶  Start"
+            android:textColor="#1E3A5C"
+            android:textSize="15sp" />
+    </LinearLayout>
+</FrameLayout>

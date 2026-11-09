@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/primary_dark</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowBackground">@drawable/splash_legacy</item>
+        <item name="android:fontFamily">@font/plex</item>
+        <item name="android:textViewStyle">@style/Txt</item>
+    </style>
+
+    <!-- IBM Plex Sans Arabic (same as the Nusuk app), regular weight -->
+    <style name="Txt" parent="@android:style/Widget.DeviceDefault.TextView">
+        <item name="android:fontFamily">@font/plex</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="Pill" parent="Txt">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">34dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+</resources>

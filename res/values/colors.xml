@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- matches nusuk.minbars.net -->
+    <color name="primary">#3A6A98</color>
+    <color name="primary_dark">#37608D</color>
+    <color name="background">#F5F5F4</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="text_primary">#1C1917</color>
+    <color name="text_secondary">#78716C</color>
+    <color name="hero_label">#BFFFFFFF</color>
+    <color name="gold_light">#FFFFFF</color>
+    <color name="warn_text">#92400E</color>
+</resources>

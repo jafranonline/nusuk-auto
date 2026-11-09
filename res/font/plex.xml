@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- IBM Plex Sans Arabic (SIL Open Font License 1.1), the same family the Nusuk app uses -->
+<font-family xmlns:android="http://schemas.android.com/apk/res/android">
+    <font android:fontStyle="normal" android:fontWeight="300" android:font="@font/plex_light" />
+    <font android:fontStyle="normal" android:fontWeight="400" android:font="@font/plex_regular" />
+    <font android:fontStyle="normal" android:fontWeight="500" android:font="@font/plex_medium" />
+</font-family>
