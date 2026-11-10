@@ -103,7 +103,7 @@ public class NusukAccessibilityService extends AccessibilityService {
     private long quizStartTime = 0;
     // Large font sizes make the quiz and result pages taller than the screen: their buttons are
     // then below the fold (or missing from the node tree until scrolled to).
-    private static final int MAX_PAGE_SCROLLS = 4;
+    private static final int MAX_PAGE_SCROLLS = 6;
     private int pageScrolls = 0;          // scrolls on the current unknown quiz page
     private int revealTries = 0;          // scrolls made to bring one button into view
     private long roundStartedAt = 0;      // "Open the door" tapped; 0 after "Play again"
@@ -759,7 +759,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                 QuizQuestionData read = extractQuizData(screen);
                 if (read != null) addToScan(read);
                 // Keep reading down while options may be below the fold.
-                if (scanOptions.size() < 4 && canScrollDown(screen) && scanScrolls < MAX_SCAN_SCROLLS) {
+                if (canScrollDown(screen) && scanScrolls < MAX_SCAN_SCROLLS) { // always to the bottom: options and the button sit below the fold
                     scanScrolls++;
                     Log.i(TAG, "Question page: " + scanOptions.size() + " options so far -> scrolling down (" + scanScrolls + ")");
                     scrollPage(screen);
@@ -886,7 +886,7 @@ public class NusukAccessibilityService extends AccessibilityService {
             // 4b. TALL QUIZ / RESULT PAGE: with a large font size the question's "Check your answer"
             // or the result's "Play again" can sit below the fold, so the page isn't recognised.
             // Mid-round, scroll down to find them before treating the page as unknown.
-            boolean midRound = lastQuestion != null
+            boolean midRound = lastQuestion != null || looksLikeResult(screen)
                     || (roundStartedAt > 0 && System.currentTimeMillis() - roundStartedAt < 120_000);
             if (midRound && pageScrolls < MAX_PAGE_SCROLLS && canScrollDown(screen)) {
                 if (lastQuestion != null && seenResult == null && looksLikeResult(screen)) {
