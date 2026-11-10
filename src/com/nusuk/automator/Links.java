@@ -11,6 +11,8 @@ import android.widget.Toast;
 final class Links {
     static final String GROUP_URL = "https://www.facebook.com/groups/nusukauto/";
     static final String DEV_URL = "https://www.facebook.com/jafranonline/";
+    static final String GITHUB_URL = "https://github.com/jafranonline";
+    static final String WEB_URL = "https://jafran.dev";
     static final String DEV_NAME = "Jafran Hasan";
     static final String FITAN_URL = "https://alfitan.com/";
 

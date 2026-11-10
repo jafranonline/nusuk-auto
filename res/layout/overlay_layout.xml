@@ -268,7 +268,7 @@
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:singleLine="true"
-                android:text="Delay 2–6s between quizzes"
+                android:text="Human-like pace"
                 android:textColor="#AFC4DA"
                 android:textSize="12sp" />
 

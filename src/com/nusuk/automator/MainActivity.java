@@ -32,11 +32,14 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     private JSONObject quizStatus;      // last /api/quiz/status reply (null = unknown)
     private AlertDialog limitDialog;
     private TextView tvAppVersion, tvBellBadge;
+    private String langAtCreate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        L.view(this, findViewById(android.R.id.content));
+        langAtCreate = L.lang(this);
         setupSplash();
 
         permBanner = findViewById(R.id.permBanner);
@@ -50,7 +53,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
             NusukAccessibilityService s = NusukAccessibilityService.getInstance();
             if (s != null) s.stopAutomation("Stopped by user");
             updateRunning();
-            Toast.makeText(this, "Stopped", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, L.t(this, "Stopped"), Toast.LENGTH_SHORT).show();
         });
         tvCodesStat = findViewById(R.id.tvCodesStat);
         tvQuizStat = findViewById(R.id.tvQuizStat);
@@ -108,6 +111,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     @Override
     protected void onPause() {
         super.onPause();
+        OverlayService.setAppOpen(false);
         rowAccessibility.removeCallbacks(recheckPermissions);
         Notices.onChange = null;
         CodeDownloader.onProgress = null;
@@ -124,13 +128,13 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         if (CodeDownloader.running && (have == 0 || have < total)) {
             banner.setVisibility(View.VISIBLE);
             banner.setOnClickListener(null);
-            status.setText(have == 0 ? "Downloading codes\u2026" : "Updating codes\u2026");
+            status.setText(L.t(this, have == 0 ? "Downloading codes\u2026" : "Updating codes\u2026"));
             bar.setVisibility(View.VISIBLE);
             bar.setProgress(total > 0 ? (int) (have * 1000L / total) : 0);
-            pct.setText(total > 0 ? String.format(java.util.Locale.US, "%,d / %,d", have, total) : "");
+            pct.setText(total > 0 ? L.t(this, String.format(java.util.Locale.US, "%,d / %,d", have, total)) : "");
         } else if (CodeDownloader.failed && have == 0) {
             banner.setVisibility(View.VISIBLE);
-            status.setText("Couldn\u2019t download codes. Tap to retry");
+            status.setText(L.t(this, "Couldn\u2019t download codes. Tap to retry"));
             pct.setText("");
             bar.setVisibility(View.GONE);
             banner.setOnClickListener(v -> CodeDownloader.start(this, true));
@@ -143,12 +147,14 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     private void updateBell() {
         int n = Notices.unreadCount(this);
         tvBellBadge.setVisibility(n > 0 ? View.VISIBLE : View.GONE);
-        tvBellBadge.setText(n > 9 ? "9+" : String.valueOf(n));
+        tvBellBadge.setText(L.t(this, n > 9 ? "9+" : String.valueOf(n)));
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        OverlayService.setAppOpen(true);
+        if (langAtCreate != null && !langAtCreate.equals(L.lang(this))) { recreate(); return; } // language changed in Settings
         updateBell();
         Notices.onChange = () -> runOnUiThread(this::updateBell);
         CodeDownloader.onProgress = () -> runOnUiThread(this::updateCodesBanner);
@@ -168,7 +174,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     private void renderVersionBadge(UpdateChecker.Info newer) {
         if (tvAppVersion == null) return;
         if (newer != null) {
-            tvAppVersion.setText("Update \u2191 v" + newer.versionName);
+            tvAppVersion.setText(L.t(this, "Update \u2191 v" + newer.versionName));
             tvAppVersion.setTextColor(0xFFB45309);
             return;
         }
@@ -176,7 +182,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         try {
             version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {}
-        tvAppVersion.setText("v" + version);
+        tvAppVersion.setText(L.t(this, "v" + version));
         tvAppVersion.setTextColor(getColor(R.color.text_secondary));
     }
 
@@ -223,7 +229,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         java.util.Date d = new java.util.Date(at * 1000);
         String time = android.text.format.DateFormat.getTimeFormat(this).format(d);
         boolean bdTime = java.util.TimeZone.getDefault().getOffset(d.getTime()) == 6 * 3600_000;
-        tvQuizReset.setText("Daily limit resets every day at " + time + (bdTime ? "" : " (your time)"));
+        tvQuizReset.setText(L.t(this, "Daily limit resets every day at " + time + (bdTime ? "" : " (your time)")));
     }
 
     /** Every limit (the admin's global Play Quiz settings, pause) is decided by the server: the app
@@ -248,10 +254,10 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         if (limitDialog != null && limitDialog.isShowing()) limitDialog.dismiss();
         String group = groupUrl();
         limitDialog = new AlertDialog.Builder(this)
-                .setTitle("Play Quiz")
-                .setMessage(message != null && !message.isEmpty() ? message : "Play Quiz isn't available right now.")
-                .setPositiveButton("OK", null)
-                .setNeutralButton("Facebook group", (dlg, which) -> openFacebook(group))
+                .setTitle(L.t(this, "Play Quiz"))
+                .setMessage(message != null && !message.isEmpty() ? message : L.t(this, "Play Quiz isn't available right now."))
+                .setPositiveButton(L.t(this, "OK"), null)
+                .setNeutralButton(L.t(this, "Facebook group"), (dlg, which) -> openFacebook(group))
                 .show();
     }
 
@@ -261,7 +267,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         runningBanner.setVisibility(running ? View.VISIBLE : View.GONE);
         if (running) {
             ((TextView) findViewById(R.id.tvRunningTitle)).setText(
-                    s.getCurrentMode() == NusukAccessibilityService.AutomationMode.QUIZ ? "Playing quiz" : "Adding codes");
+                    L.t(this, s.getCurrentMode() == NusukAccessibilityService.AutomationMode.QUIZ ? "Playing quiz" : "Adding codes"));
         }
     }
 
@@ -273,24 +279,24 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
 
     private void launch(String mode) {
         if ("CODES".equals(mode) && KeyRepository.getInstance(this).getTotalCount() == 0) {
-            Toast.makeText(this, CodeDownloader.running ? "Codes are still downloading\u2026" : "No codes yet. Connect to the internet and tap the banner to retry.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, L.t(this, CodeDownloader.running ? "Codes are still downloading\u2026" : "No codes yet. Connect to the internet and tap the banner to retry."), Toast.LENGTH_SHORT).show();
             CodeDownloader.start(this, false);
             return;
         }
         if (!isNusukInstalled()) {
-            Toast.makeText(this, "Install the Nusuk app first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, L.t(this, "Install the Nusuk app first"), Toast.LENGTH_SHORT).show();
             openNusukStore();
             return;
         }
         if (!NusukAccessibilityService.isServiceRunning()) {
             Toast.makeText(this, isAccessibilitySwitchedOn()
-                    ? "Android stopped Nusuk Auto. In Accessibility, turn it off and on again."
-                    : "Enable the accessibility service first", Toast.LENGTH_LONG).show();
+                    ? L.t(this, "Android stopped Nusuk Auto. In Accessibility, turn it off and on again.")
+                    : L.t(this, "Enable the accessibility service first"), Toast.LENGTH_LONG).show();
             openAccessibilitySettings();
             return;
         }
         if (!isOverlayGranted()) {
-            Toast.makeText(this, "Allow the floating overlay first", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, L.t(this, "Allow the floating overlay first"), Toast.LENGTH_SHORT).show();
             openOverlaySettings();
             return;
         }
@@ -313,7 +319,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
             finish();
         } catch (Exception e) {
             Log.e("MainActivity", "Failed to launch Nusuk", e);
-            Toast.makeText(this, "Could not launch Nusuk app: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, L.t(this, "Could not launch Nusuk app: " + e.getMessage()), Toast.LENGTH_LONG).show();
         }
     }
 
@@ -325,8 +331,8 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         // an app update, or a battery saver killing it): only a connected service counts.
         boolean accOk = NusukAccessibilityService.isServiceRunning();
         boolean accStale = !accOk && isAccessibilitySwitchedOn();
-        tvAccessibilityLabel.setText(accStale ? "Accessibility stopped: turn it off and on" : "Accessibility service");
-        btnEnableAccessibility.setText(accStale ? "Fix" : "Enable");
+        tvAccessibilityLabel.setText(L.t(this, accStale ? "Accessibility stopped: turn it off and on" : "Accessibility service"));
+        btnEnableAccessibility.setText(L.t(this, accStale ? "Fix" : "Enable"));
         // Android binds the service a moment after the app starts (or after an update):
         // look again shortly before calling it stopped for real.
         // Meanwhile the row stays hidden, so it doesn't flash on every start.
@@ -345,8 +351,8 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     }
 
     private void updateStats() {
-        tvCodesStat.setText(String.valueOf(Stats.codesToday(this)));
-        tvQuizStat.setText(String.valueOf(Stats.quizToday(this)));
+        tvCodesStat.setText(L.t(this, String.valueOf(Stats.codesToday(this))));
+        tvQuizStat.setText(L.t(this, String.valueOf(Stats.quizToday(this))));
     }
 
     private void openAccessibilitySettings() {
@@ -362,6 +368,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
 
     /** The footer credit (name + chevron) opens the Developer page. */
     private void setupDevCredit() {
+        findViewById(R.id.btnSettings).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         findViewById(R.id.btnDevRow).setOnClickListener(v -> startActivity(new Intent(this, DeveloperActivity.class)));
     }
 

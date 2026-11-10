@@ -22,7 +22,7 @@ public class NotificationsActivity extends ScreenActivity {
 
     @Override
     protected void build() {
-        barAction.setText("Clear all");
+        barAction.setText(L.t(this, "Clear all"));
         barAction.setOnClickListener(v -> {
             Notices.clearHistory(this);
             render();

@@ -19,10 +19,17 @@ public class DeveloperActivity extends ScreenActivity {
         c.setGravity(Gravity.CENTER_HORIZONTAL);
         c.setPadding(px(20), px(28), px(20), px(24));
 
-        TextView avatar = text("J", 40, 0xFFFFFFFF);
-        avatar.setGravity(Gravity.CENTER);
-        avatar.setBackgroundResource(R.drawable.avatar_bg);
-        c.addView(avatar, new LinearLayout.LayoutParams(px(96), px(96)));
+        android.widget.ImageView avatar = new android.widget.ImageView(this);
+        avatar.setImageResource(R.drawable.dev_avatar);
+        avatar.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        avatar.setContentDescription(Links.DEV_NAME);
+        avatar.setOutlineProvider(new android.view.ViewOutlineProvider() {
+            @Override public void getOutline(android.view.View v, android.graphics.Outline o) {
+                o.setOval(0, 0, v.getWidth(), v.getHeight());
+            }
+        });
+        avatar.setClipToOutline(true);
+        c.addView(avatar, new LinearLayout.LayoutParams(px(104), px(104)));
 
         TextView name = text(Links.DEV_NAME, 24, 0xFF1C1917);
         name.setGravity(Gravity.CENTER);
@@ -33,6 +40,10 @@ public class DeveloperActivity extends ScreenActivity {
 
         c.addView(pill("Facebook profile", R.drawable.ic_facebook_white, true, 0xFF1877F2,
                 () -> Links.openFacebook(this, Links.DEV_URL)), lp(-2, -2, 20));
+        c.addView(pill("GitHub", R.drawable.ic_github_white, true, 0xFF24292F,
+                () -> Links.open(this, Links.GITHUB_URL)), lp(-2, -2, 10));
+        c.addView(pill("jafran.dev", R.drawable.ic_globe, false, 0,
+                () -> Links.open(this, Links.WEB_URL)), lp(-2, -2, 10));
         c.addView(pill("Join the Facebook group", R.drawable.ic_facebook, false, 0,
                 () -> Links.openFacebook(this, Links.groupUrl(this))), lp(-2, -2, 10));
 

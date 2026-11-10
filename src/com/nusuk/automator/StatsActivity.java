@@ -85,9 +85,9 @@ public class StatsActivity extends ScreenActivity {
         r.setMinimumHeight(px(head ? 36 : 48));
         int color = head ? 0xFF78716C : 0xFF1C1917;
         float sp = head ? 12 : 15;
-        r.addView(text(head ? date.toUpperCase() : date, sp, color), new LinearLayout.LayoutParams(0, -2, 1));
-        r.addView(cell(head ? codes.toUpperCase() : codes, sp, color), new LinearLayout.LayoutParams(px(64), -2));
-        r.addView(cell(head ? quiz.toUpperCase() : quiz, sp, color), new LinearLayout.LayoutParams(px(64), -2));
+        r.addView(text(head ? L.t(this, date).toUpperCase() : date, sp, color), new LinearLayout.LayoutParams(0, -2, 1));
+        r.addView(cell(head ? L.t(this, codes).toUpperCase() : codes, sp, color), new LinearLayout.LayoutParams(px(64), -2));
+        r.addView(cell(head ? L.t(this, quiz).toUpperCase() : quiz, sp, color), new LinearLayout.LayoutParams(px(64), -2));
         return r;
     }
 
@@ -111,7 +111,7 @@ public class StatsActivity extends ScreenActivity {
             if (ymd.equals(today)) return "Today";
             Date yesterday = new Date(in.parse(today).getTime() - 86_400_000L);
             if (ymd.equals(in.format(yesterday))) return "Yesterday";
-            return new SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault()).format(d);
+            return new SimpleDateFormat("EEE, d MMM yyyy", L.locale(this)).format(d);
         } catch (Exception e) {
             return ymd;
         }

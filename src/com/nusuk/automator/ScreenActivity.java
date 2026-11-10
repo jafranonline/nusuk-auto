@@ -28,10 +28,23 @@ abstract class ScreenActivity extends Activity {
         dp = getResources().getDisplayMetrics().density;
         content = findViewById(R.id.content);
         barAction = findViewById(R.id.tvBarAction);
-        ((TextView) findViewById(R.id.tvBarTitle)).setText(screenTitle());
+        ((TextView) findViewById(R.id.tvBarTitle)).setText(L.t(this, screenTitle()));
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         Links.applyInsets(findViewById(R.id.root), findViewById(R.id.bar), content);
+        L.view(this, findViewById(R.id.root));
         build();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        OverlayService.setAppOpen(true);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        OverlayService.setAppOpen(false);
     }
 
     protected int px(float v) {
@@ -40,7 +53,7 @@ abstract class ScreenActivity extends Activity {
 
     protected TextView text(String s, float sp, int color) {
         TextView t = new TextView(this);
-        t.setText(s);
+        t.setText(L.t(this, s));
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
         t.setTextColor(color);
         t.setLineSpacing(0, 1.2f);
@@ -55,7 +68,7 @@ abstract class ScreenActivity extends Activity {
 
     /** Small grey section label above a group of cards. */
     protected void label(String s, int top) {
-        TextView t = text(s.toUpperCase(), 12, 0xFF78716C);
+        TextView t = text(L.t(this, s).toUpperCase(), 12, 0xFF78716C);
         t.setLetterSpacing(0.12f);
         t.setPadding(px(4), 0, 0, 0);
         content.addView(t, lp(-2, -2, top));
@@ -74,7 +87,7 @@ abstract class ScreenActivity extends Activity {
     /** Pill button: [filled] green/blue solid with white text, else soft green. */
     protected TextView pill(String label, int iconRes, boolean filled, int fillColor, Runnable click) {
         TextView t = new TextView(this);
-        t.setText(label);
+        t.setText(L.t(this, label));
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         t.setGravity(Gravity.CENTER);
         t.setSingleLine(true);

@@ -84,11 +84,11 @@ final class UpdateChecker {
 
     /** User tapped the version badge: check now and always say the result. */
     static void manualCheck(Activity a, Listener badge) {
-        Toast.makeText(a, "Checking for updates...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(a, L.t(a, "Checking for updates..."), Toast.LENGTH_SHORT).show();
         fetch(a, info -> {
             if (badge != null) badge.onChecked(info);
             if (info != null) showDialog(a, info);
-            else Toast.makeText(a, "You have the latest version", Toast.LENGTH_SHORT).show();
+            else Toast.makeText(a, L.t(a, "You have the latest version"), Toast.LENGTH_SHORT).show();
         }, true);
     }
 
@@ -154,7 +154,7 @@ final class UpdateChecker {
             main.post(() -> {
                 if (a.isFinishing() || a.isDestroyed()) return;
                 if (failed && reportErrors) {
-                    Toast.makeText(a, "Could not check for updates. Check your internet.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(a, L.t(a, "Could not check for updates. Check your internet."), Toast.LENGTH_LONG).show();
                     return;
                 }
                 if (!failed) cb.onChecked(result);
@@ -169,17 +169,17 @@ final class UpdateChecker {
         if (shown != null && shown.isShowing()) return;
         boolean forced = isForced(a, info);
         String msg = (forced
-                ? "This version no longer works properly. Please install the new version to continue."
-                : "A new version of Nusuk Auto is ready.")
-                + (info.notes.isEmpty() ? "" : "\n\nWhat's new:\n" + info.notes)
-                + "\n\nYour progress is kept when you update.";
+                ? L.t(a, "This version no longer works properly. Please install the new version to continue.")
+                : L.t(a, "A new version of Nusuk Auto is ready."))
+                + (info.notes.isEmpty() ? "" : "\n\n" + L.t(a, "What's new:") + "\n" + info.notes)
+                + "\n\n" + L.t(a, "Your progress is kept when you update.");
         AlertDialog.Builder b = new AlertDialog.Builder(a)
-                .setTitle((forced ? "Update required" : "Update available") + " (v" + info.versionName + ")")
+                .setTitle(L.t(a, forced ? "Update required" : "Update available") + " (v" + info.versionName + ")")
                 .setMessage(msg)
                 .setCancelable(!forced)
-                .setPositiveButton("Update", (d, w) -> openDownload(a, info));
+                .setPositiveButton(L.t(a, "Update"), (d, w) -> openDownload(a, info));
         if (!forced) {
-            b.setNegativeButton("Later", (d, w) -> prefs(a).edit()
+            b.setNegativeButton(L.t(a, "Later"), (d, w) -> prefs(a).edit()
                     .putInt("snoozedCode", info.versionCode)
                     .putLong("snoozedAt", System.currentTimeMillis()).apply());
         }
@@ -189,7 +189,7 @@ final class UpdateChecker {
     private static void openDownload(Activity a, Info info) {
         try {
             a.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(info.url != null && info.url.startsWith("https://") ? info.url : DEFAULT_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            Toast.makeText(a, "When the download finishes, open it and tap Update.", Toast.LENGTH_LONG).show();
+            Toast.makeText(a, L.t(a, "When the download finishes, open it and tap Update."), Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(a, info.url, Toast.LENGTH_LONG).show();
         }

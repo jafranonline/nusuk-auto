@@ -43,6 +43,7 @@
             android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
 
         <activity android:name=".DeveloperActivity" android:exported="false" />
+        <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".StatsActivity" android:exported="false" />
         <activity android:name=".NotificationsActivity" android:exported="false" android:launchMode="singleTop" />
 

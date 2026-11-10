@@ -82,6 +82,23 @@
                         android:textSize="10sp"
                         android:visibility="gone" />
                 </FrameLayout>
+
+                <FrameLayout
+                    android:id="@+id/btnSettings"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/icon_btn"
+                    android:clickable="true"
+                    android:contentDescription="Settings"
+                    android:focusable="true">
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_settings_white"
+                        android:importantForAccessibility="no" />
+                </FrameLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -691,9 +708,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:fontFamily="@font/plex_medium"
-                        android:text="الفتن وأشراط الساعة"
+                        android:text="Al Fitan"
                         android:textColor="#1E3A5C"
-                        android:textDirection="rtl"
                         android:textSize="22sp" />
 
                     <TextView

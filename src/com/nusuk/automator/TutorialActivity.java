@@ -63,7 +63,7 @@ public class TutorialActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, (int) (4 * dp), Gravity.TOP));
 
         error = new TextView(this);
-        error.setText("Couldn't load the tutorials.\nCheck your internet, then tap here to try again.");
+        error.setText(L.t(this, "Couldn't load the tutorials.\nCheck your internet, then tap here to try again."));
         error.setTextColor(0xFFE7E5E4);
         error.setTextSize(15);
         error.setGravity(Gravity.CENTER);
@@ -80,7 +80,7 @@ public class TutorialActivity extends Activity {
 
         // Close, where the page's (hidden in-app) "Back to codes" link sits
         TextView close = new TextView(this);
-        close.setText("✕  Close");
+        close.setText(L.t(this, "✕  Close"));
         close.setTextSize(13);
         close.setTextColor(0xFFFDE68A);
         int ph = (int) (12 * dp), pv = (int) (6 * dp);
@@ -194,12 +194,14 @@ public class TutorialActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        OverlayService.setAppOpen(false);
         if (web != null) web.onPause(); // stops video sound when the app goes to the background
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        OverlayService.setAppOpen(true);
         if (web != null) web.onResume();
     }
 

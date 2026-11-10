@@ -95,7 +95,10 @@ public class NusukAccessibilityService extends AccessibilityService {
     // Quiz mode state
     private int quizCorrectCount = 0;
     private int quizWrongCount = 0;
-    private int doorIndex = 0;
+    private final java.util.ArrayList<Integer> doorBag = new java.util.ArrayList<>(); // doors left this cycle
+    private final java.util.Random doorRandom = new java.util.Random();
+    private int pendingDoor = -1;   // door tapped, awaiting "Open the door"
+    private int pendingDoorTries = 0;
     private boolean quizSolvingInProgress = false;
     private long quizStartTime = 0;
     // When the optional pause between quizzes ends (0 = no pause pending). See QuizPace.
@@ -430,6 +433,8 @@ public class NusukAccessibilityService extends AccessibilityService {
         this.currentMode = mode;
         Log.i(TAG, "startAutomation: mode=" + currentMode + ", count=" + targetBatchCount);
         this.batchProcessed = 0;
+        this.thinkUntil = 0;
+        QuizPace.resetRun();
         this.isRunning = true;
         this.isPaused = false;
 
@@ -452,7 +457,8 @@ public class NusukAccessibilityService extends AccessibilityService {
         // Reset Quiz state
         this.quizCorrectCount = 0;
         this.quizWrongCount = 0;
-        this.doorIndex = 0;
+        this.doorBag.clear();
+        this.pendingDoor = -1;
         this.quizSolvingInProgress = false;
         this.quizReq++;
         this.nextQuizAt = 0;
@@ -707,7 +713,8 @@ public class NusukAccessibilityService extends AccessibilityService {
                         return;
                     }
                     // Optional human-like pause before the next quiz (Nusuk may throttle instant answers)
-                    nextQuizAt = QuizPace.isOn(this) ? System.currentTimeMillis() + QuizPace.randomDelayMs() : 0;
+                    long gap = QuizPace.gapDelayMs(this);
+                    nextQuizAt = gap > 0 ? System.currentTimeMillis() + gap : 0;
                 }
 
                 // Re-checked every second, so turning the pause off mid-wait takes effect at once.
@@ -736,6 +743,7 @@ public class NusukAccessibilityService extends AccessibilityService {
             Item openDoorBtn = screen.find("Open the door");
             if (openDoorBtn != null) {
                 Log.i(TAG, "Detected Modal: 'Open the door'");
+                pendingDoor = -1;
                 notifyProgress("Confirming door...");
                 roundStartedAt = System.currentTimeMillis();
                 pageScrolls = 0;
@@ -863,8 +871,17 @@ public class NusukAccessibilityService extends AccessibilityService {
             // 4. CHOOSE A DOOR SCREEN: "Choose a door"
             Item heading = screen.find("Choose a door");
             if (heading != null) {
-                int door = doorIndex % 4;
-                doorIndex++;
+                // Random door, each of the 4 once per cycle. A re-seen screen (tap not yet registered)
+                // retries the same door a couple of times instead of burning through the others.
+                if (pendingDoor < 0 || pendingDoorTries >= 3) {
+                    if (doorBag.isEmpty()) {
+                        for (int i = 0; i < 4; i++) doorBag.add(i);
+                    }
+                    pendingDoor = doorBag.remove(doorRandom.nextInt(doorBag.size()));
+                    pendingDoorTries = 0;
+                }
+                pendingDoorTries++;
+                int door = pendingDoor;
                 notifyProgress("Selecting Door " + (door + 1) + "...");
                 Item title = findDoor(screen, heading, DOOR_TITLES[door]);
                 if (title != null) {
@@ -1601,10 +1618,26 @@ public class NusukAccessibilityService extends AccessibilityService {
         pendingMoves = 0;
         pendingSince = System.currentTimeMillis();
         pendingNextStepMs = nextStepMs;
+        // Normal pace: "read and think" before tapping. Fast: tap at once.
+        long think = QuizPace.thinkDelayMs(this, lastQuestion == null ? 0 : lastQuestion.length());
+        if (think > 0) {
+            notifyProgress("Thinking...");
+            thinkUntil = System.currentTimeMillis() + think;
+            pendingSince = thinkUntil; // keep the 20 s timeout from counting the wait
+            scheduleNextStep(think);
+            return;
+        }
         stepPendingAnswer(snapshot());
     }
 
+    private long thinkUntil = 0; // Normal pace: no answer tap before this time
+
     private void stepPendingAnswer(Screen screen) {
+        long thinkLeft = thinkUntil - System.currentTimeMillis();
+        if (thinkLeft > 0) {
+            scheduleNextStep(Math.min(thinkLeft, 1000));
+            return;
+        }
         if (System.currentTimeMillis() - pendingSince > 20_000 || pendingMoves > 14) {
             Log.w(TAG, "Couldn't press the answer / Check your answer -> reading the question again");
             pendingAnswer = null;

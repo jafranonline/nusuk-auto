@@ -15,6 +15,18 @@ import android.widget.*;
 public class OverlayService extends Service implements NusukAccessibilityService.AutomationListener, KeyRepository.ChangeListener {
     private static final String TAG = "OverlayService";
     private static OverlayService instance;
+    private static volatile boolean appOpen = false;
+
+    /** Nusuk Auto's own screens are on top: the floating widget hides there and comes back when they leave. */
+    static void setAppOpen(boolean open) {
+        appOpen = open;
+        OverlayService s = instance;
+        if (s != null) s.mainHandler.post(s::applyHidden);
+    }
+
+    private void applyHidden() {
+        if (overlayView != null) overlayView.setVisibility(appOpen ? View.GONE : View.VISIBLE);
+    }
 
     public static OverlayService getInstance() {
         return instance;
@@ -170,6 +182,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
         cfg.fontScale = 1f;
         LayoutInflater inflater = LayoutInflater.from(createConfigurationContext(cfg));
         overlayView = inflater.inflate(R.layout.overlay_layout, null);
+        L.view(this, overlayView);
 
         int layoutType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -252,7 +265,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
             if (s == null) {
                 // Usually the switch is still on but Android stopped the service: turning it off
                 // and on reconnects it. Open the screen so it's one step away.
-                Toast.makeText(this, "Nusuk Auto isn't connected. In Accessibility, turn Nusuk Auto off and on again.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, L.t(this, "Nusuk Auto isn't connected. In Accessibility, turn Nusuk Auto off and on again."), Toast.LENGTH_LONG).show();
                 try {
                     startActivity(new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
@@ -307,6 +320,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
         if (overlayBadge != null) overlayBadge.setOnTouchListener(dragListener);
 
         windowManager.addView(overlayView, params);
+        applyHidden();
         selectMode(NusukAccessibilityService.AutomationMode.QUIZ); // Default to Quiz since it's the active focus
         selectBatch(DEFAULT_BATCH);
         updateUiStats();
@@ -356,7 +370,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
     private void setActionIdle() {
         setRunningUi(false);
         if (btnAction == null) return;
-        btnAction.setText(selectedMode == NusukAccessibilityService.AutomationMode.QUIZ ? "▶  Start quiz" : "▶  Start codes");
+        btnAction.setText(L.t(this, selectedMode == NusukAccessibilityService.AutomationMode.QUIZ ? "▶  Start quiz" : "▶  Start codes"));
         btnAction.setBackgroundResource(R.drawable.ov_start_btn);
         btnAction.setTextColor(0xFF1E3A5C);
     }
@@ -364,9 +378,9 @@ public class OverlayService extends Service implements NusukAccessibilityService
     private void setActionRunning(int done, int target) {
         setRunningUi(true);
         NusukAccessibilityService s = NusukAccessibilityService.getInstance();
-        if (btnPause != null) btnPause.setText(s != null && s.isPaused() ? "▶  Resume" : "❚❚  Pause");
+        if (btnPause != null) btnPause.setText(L.t(this, s != null && s.isPaused() ? "▶  Resume" : "❚❚  Pause"));
         if (btnAction == null) return;
-        btnAction.setText("■  Stop");
+        btnAction.setText(L.t(this, "■  Stop"));
         btnAction.setBackgroundResource(R.drawable.button_stop);
         btnAction.setTextColor(0xFFFFFFFF);
     }
@@ -391,23 +405,23 @@ public class OverlayService extends Service implements NusukAccessibilityService
         if (btnPace == null) return;
         boolean on = QuizPace.isOn(this);
         btnPace.setBackgroundResource(on ? R.drawable.ov_switch_on : R.drawable.ov_switch_off);
-        rowPace.setContentDescription("Delay between quizzes: " + (on ? "on" : "off"));
+        rowPace.setContentDescription(L.t(this, "Quiz pace: " + L.t(this, on ? "Normal" : "Fast")));
     }
 
     private void selectBatch(int count) {
         count = Math.max(1, Math.min(MAX_BATCH, count));
         selectedBatchCount = count;
-        if (etCount != null && !String.valueOf(count).contentEquals(etCount.getText())) {
+        if (etCount != null && !L.t(this, String.valueOf(count)).contentEquals(etCount.getText())) {
             updatingCount = true;
-            etCount.setText(String.valueOf(count));
+            etCount.setText(L.t(this, String.valueOf(count)));
             etCount.setSelection(etCount.getText().length());
             updatingCount = false;
         }
 
         NusukAccessibilityService s = NusukAccessibilityService.getInstance();
         if (s == null || !s.isRunning()) {
-            if (tvProgress != null) tvProgress.setText("0 / " + selectedBatchCount);
-            if (tvBadgeCount != null) tvBadgeCount.setText("0 / " + selectedBatchCount);
+            if (tvProgress != null) tvProgress.setText(L.t(this, "0 / " + selectedBatchCount));
+            if (tvBadgeCount != null) tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
         }
     }
 
@@ -471,23 +485,23 @@ public class OverlayService extends Service implements NusukAccessibilityService
 
             if (selectedMode == NusukAccessibilityService.AutomationMode.QUIZ) {
                 if (tvSubStats != null && (s == null || !s.isRunning())) {
-                    tvSubStats.setText("✓ 0   ✗ 0");
+                    tvSubStats.setText(L.t(this, "✓ 0   ✗ 0"));
                 }
                 if (s == null || !s.isRunning()) {
                     setActionIdle();
                     if (tvBadgeCount != null) {
-                        tvBadgeCount.setText("0 / " + selectedBatchCount);
+                        tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
                     }
                 }
             } else {
                 if (tvSubStats != null && (s == null || !s.isRunning())) {
                     int already = repo.getAlreadyCount();
-                    tvSubStats.setText("✓ " + repo.getSuccessCount() + "   ✗ " + repo.getInvalidCount() + (already > 0 ? "   ↺ " + already : ""));
+                    tvSubStats.setText(L.t(this, "✓ " + repo.getSuccessCount() + "   ✗ " + repo.getInvalidCount() + (already > 0 ? "   ↺ " + already : "")));
                 }
                 if (s == null || !s.isRunning()) {
                     setActionIdle();
                     if (tvBadgeCount != null) {
-                        tvBadgeCount.setText("0 / " + selectedBatchCount);
+                        tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
                     }
                 }
             }
@@ -500,11 +514,11 @@ public class OverlayService extends Service implements NusukAccessibilityService
     public void onProgress(String status, String currentCode, int done, int target, int success, int invalid, int remaining) {
         Log.i(TAG, "Overlay onProgress -> " + done + "/" + target + " [" + status + "] ✓=" + success + " ✗=" + invalid);
         mainHandler.post(() -> {
-            if (tvProgress != null) tvProgress.setText(done + " / " + target);
-            if (tvSubStats != null) tvSubStats.setText("✓ " + success + "   ✗ " + invalid);
-            if (tvOverlayStatus != null) tvOverlayStatus.setText(status);
+            if (tvProgress != null) tvProgress.setText(L.t(this, done + " / " + target));
+            if (tvSubStats != null) tvSubStats.setText(L.t(this, "✓ " + success + "   ✗ " + invalid));
+            if (tvOverlayStatus != null) tvOverlayStatus.setText(L.t(this, status));
 
-            if (tvBadgeCount != null) tvBadgeCount.setText(done + " / " + target);
+            if (tvBadgeCount != null) tvBadgeCount.setText(L.t(this, done + " / " + target));
             setActionRunning(done, target);
             if (overlayView != null) overlayView.invalidate();
         });
@@ -514,7 +528,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
     public void onStopped(String reason) {
         Log.i(TAG, "Overlay onStopped -> " + reason);
         mainHandler.post(() -> {
-            if (tvOverlayStatus != null) tvOverlayStatus.setText(reason);
+            if (tvOverlayStatus != null) tvOverlayStatus.setText(L.t(this, reason));
             setActionIdle();
             updateUiStats();
             if (overlayView != null) overlayView.invalidate();
