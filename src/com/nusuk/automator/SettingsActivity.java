@@ -152,6 +152,13 @@ public class SettingsActivity extends ScreenActivity {
                 () -> setPace(false));
         c.addView(optNormal.row, lp(-1, -2, 14));
         c.addView(optFast.row, lp(-1, -2, 10));
+        label("Share", 22);
+        LinearLayout shc = card(8);
+        shc.addView(text("Know someone who does Umrah quizzes? Share the app with them.", 14, 0xFF44403C));
+        TextView shareBtn = pill("Share the app", 0, false, 0, () -> Links.share(this));
+        shareBtn.setMinHeight(px(36));
+        shc.addView(shareBtn, lp(-2, -2, 14));
+
         label("Support", 22);
         LinearLayout sc = card(8);
         sc.addView(text("Something not working? Send a report with your app version, phone model and recent errors.", 14, 0xFF44403C));

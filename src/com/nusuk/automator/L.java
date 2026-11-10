@@ -247,6 +247,9 @@ final class L {
         // ----- settings -----
         x("Language", "ভাষা");
         x("Support", "সাপোর্ট");
+        x("Share", "শেয়ার");
+        x("Share the app", "অ্যাপটা শেয়ার করো");
+        x("Know someone who does Umrah quizzes? Share the app with them.", "চেনা কেউ ওমরাহ কুইজ করে? তাকে অ্যাপটা শেয়ার করো।");
         x("Something not working? Send a report with your app version, phone model and recent errors.", "কিছু কাজ করছে না? অ্যাপ ভার্সন, ফোনের মডেল আর সাম্প্রতিক এরর সহ একটি রিপোর্ট পাঠাও।");
         x("Share debug report", "ডিবাগ রিপোর্ট শেয়ার করো");
         x("English", "English");

@@ -14,6 +14,8 @@ final class Links {
     static final String GITHUB_URL = "https://github.com/jafranonline";
     static final String WEB_URL = "https://jafran.dev";
     static final String DEV_NAME = "Jafran Hasan";
+    /** The Facebook post users share to spread the app (it carries the download link). */
+    static final String SHARE_URL = "https://www.facebook.com/share/p/1CEffGd9mB/";
     static final String FITAN_URL = "https://alfitan.com/";
 
     private Links() {}
@@ -43,6 +45,20 @@ final class Links {
             } catch (Exception ignored) {}
         }
         open(c, url);
+    }
+
+    /** Opens the share sheet with a short message and the post link (Facebook keeps only the link, other apps keep both). */
+    static void share(Context c) {
+        String msg = L.isBn(c)
+                ? "নুসুক অ্যাপের কোড আর কুইজ নিজে থেকেই করে দেয় Nusuk Auto। ফ্রী ডাউনলোড:\n" + SHARE_URL
+                : "Nusuk Auto adds Umrah codes and plays the Nusuk quiz for you. Free download:\n" + SHARE_URL;
+        Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_TEXT, msg);
+        try {
+            c.startActivity(Intent.createChooser(send, L.t(c, "Share the app")));
+        } catch (Exception e) {
+            Toast.makeText(c, SHARE_URL, Toast.LENGTH_LONG).show();
+        }
     }
 
     static void open(Context c, String url) {
