@@ -42,6 +42,7 @@ final class QuizBatch {
     /** Questions left according to the server: -1 = unlimited, -2 = not known yet. */
     private static int left = -2;
     private static boolean sending = false;
+    private static final int MAX_PENDING = 500;
 
     private QuizBatch() {}
 
@@ -120,14 +121,17 @@ final class QuizBatch {
                     if (l != null) main.post(() -> l.onDenied(code, msg));
                 } else {
                     Log.w(TAG, "Batch HTTP " + r.status + " " + r.body.optString("error"));
+                    // The server will never accept this batch (bad request): drop it, or it blocks every later send.
+                    if (r.status >= 400 && r.status < 500 && r.status != 408 && r.status != 429) ok = true;
                 }
             } catch (Exception e) {
                 Log.w(TAG, "Batch failed, kept for the next send: " + e);
             }
             synchronized (QuizBatch.class) {
-                if (!ok) { // put it back so nothing is lost
+                if (!ok) { // put it back so nothing is lost (capped, so a long outage can't grow without limit)
                     pendingAnswered += n;
                     pendingResults.addAll(0, res);
+                    while (pendingResults.size() > MAX_PENDING) pendingResults.remove(0);
                 }
                 sending = false;
                 more = ok && (pendingAnswered > 0 || !pendingResults.isEmpty());

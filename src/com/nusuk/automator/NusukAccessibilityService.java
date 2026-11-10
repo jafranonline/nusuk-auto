@@ -591,6 +591,20 @@ public class NusukAccessibilityService extends AccessibilityService {
             return null;
         }
 
+        /** True when the screen text is Arabic and has next to no English: Nusuk is set to Arabic. */
+        boolean looksArabic() {
+            int ar = 0, lat = 0;
+            for (Item it : items) {
+                String t = it.lower;
+                for (int i = 0; i < t.length(); i++) {
+                    char c = t.charAt(i);
+                    if (c >= 0x0600 && c <= 0x06FF) ar++;
+                    else if (c >= 'a' && c <= 'z') lat++;
+                }
+            }
+            return ar >= 30 && lat < 15;
+        }
+
         String allTextLower() {
             StringBuilder sb = new StringBuilder();
             for (Item it : items) if (!it.lower.isEmpty()) sb.append(it.lower).append(' ');
@@ -650,6 +664,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                 scheduleNextStep(500);
                 return;
             }
+            if (stoppedForArabic(screen)) return;
             if (DEBUG) {
                 String all = screen.allTextLower();
                 Log.d(TAG, "Visible texts: " + (all.length() > 200 ? all.substring(0, 200) + "..." : all));
@@ -932,8 +947,7 @@ public class NusukAccessibilityService extends AccessibilityService {
             navigateToChallenge(screen);
 
         } catch (Throwable t) {
-            Log.e(TAG, "stepQuizLoop uncaught error", t);
-            scheduleNextStep(600);
+            loopFailed("stepQuizLoop", t);
         }
     }
 
@@ -945,6 +959,37 @@ public class NusukAccessibilityService extends AccessibilityService {
             if (it.lower.contains(titleSub)) return it;
         }
         return null;
+    }
+
+    private int loopErrors = 0;
+    private long lastLoopError = 0;
+
+    /** A step threw. Retry, but stop (and record it) if it keeps failing, instead of spinning silently. */
+    private void loopFailed(String where, Throwable t) {
+        Log.e(TAG, where + " uncaught error", t);
+        long now = System.currentTimeMillis();
+        loopErrors = (now - lastLoopError < 5000) ? loopErrors + 1 : 1;
+        lastLoopError = now;
+        if (loopErrors >= 10) {
+            loopErrors = 0;
+            recordProblem(where + " failed repeatedly: " + t);
+            stopAutomation("Something went wrong. Open Nusuk and press Start again.");
+            return;
+        }
+        scheduleNextStep(600);
+    }
+
+    private int arabicScreens = 0;
+
+    /** Nusuk in Arabic can't be read (all matching is English): stop with a clear message, not a stall. */
+    private boolean stoppedForArabic(Screen screen) {
+        if (!screen.looksArabic() || screen.has("Play again") || screen.has("Open the door")
+                || screen.has("Check your answer") || screen.has("Check the code")
+                || screen.has("Choose a door") || screen.has("Add another code")) { arabicScreens = 0; return false; }
+        if (++arabicScreens < 4) return false; // a quiz question may be Arabic for a moment
+        arabicScreens = 0;
+        stopAutomation("Nusuk is in Arabic. Switch Nusuk to English, then press Start.");
+        return true;
     }
 
     /** Replies from QuizSolver arrive on the main thread; hop onto the loop thread. */
@@ -969,6 +1014,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                 scheduleNextStep(500);
                 return;
             }
+            if (stoppedForArabic(screen)) return;
 
             // 1. SUCCESS CHECK across all visible Nusuk windows (e.g. dialogs)
             Item addAnotherBtn = screen.find("Add another code to get a key");
@@ -1190,8 +1236,7 @@ public class NusukAccessibilityService extends AccessibilityService {
             navigateToChallenge(screen);
 
         } catch (Throwable t) {
-            Log.e(TAG, "stepCodesLoop uncaught error", t);
-            scheduleNextStep(600);
+            loopFailed("stepCodesLoop", t);
         }
     }
 

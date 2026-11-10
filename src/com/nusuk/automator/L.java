@@ -225,6 +225,8 @@ final class L {
         x("Navigating to Keys...", "Keys-এ যাচ্ছে...");
         x("Leaving quiz result...", "কুইজের ফলাফল থেকে বেরিয়ে আসছে...");
         x("Log in to Nusuk first", "আগে নুসুকে লগইন করো");
+        x("Nusuk is in Arabic. Switch Nusuk to English, then press Start.", "নুসুক আরবিতে আছে। নুসুককে ইংরেজি করো, তারপর Start চাপো।");
+        x("Something went wrong. Open Nusuk and press Start again.", "কিছু একটা সমস্যা হয়েছে। নুসুক ওপেন করে আবার Start চাপো।");
         x("All codes tested!", "সব কোড পরীক্ষা হয়ে গেছে!");
         x("Loading your used codes...", "তোমার ব্যবহৃত কোড লোড হচ্ছে...");
         x("Couldn't load your used codes, continuing", "ব্যবহৃত কোড লোড করা যায়নি, তবুও চালিয়ে যাচ্ছে");
@@ -356,6 +358,8 @@ final class L {
         x("Paused", "পজ করা আছে");
         x("Paused: open Nusuk to continue", "পজ: কন্টিনিউ করতে নুসুক ওপেন করো");
         x("Log in to Nusuk first", "আগে নুসুকে লগইন করো");
+        x("Nusuk is in Arabic. Switch Nusuk to English, then press Start.", "নুসুক আরবিতে আছে। নুসুককে ইংরেজি করো, তারপর Start চাপো।");
+        x("Something went wrong. Open Nusuk and press Start again.", "কিছু একটা সমস্যা হয়েছে। নুসুক ওপেন করে আবার Start চাপো।");
         x("All codes tested!", "সব কোড টেস্ট শেষ!");
         x("Couldn't find the challenge. Open it in Nusuk, then press Start.", "চ্যালেঞ্জ পাওয়া যায়নি। নুসুকে চ্যালেঞ্জ ওপেন করে Start চাপো।");
         r("Selecting Door (\\d+)\\.\\.\\.", "দরজা $1 সিলেক্ট করছে...");
