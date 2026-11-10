@@ -256,6 +256,33 @@ public class NusukAccessibilityService extends AccessibilityService {
         }
     }
 
+    /**
+     * True when Nusuk is the app the user is in. Decided by the focused app window (our floating
+     * widget can't take focus, so it never counts); an unreadable focused window is "not Nusuk".
+     * Blocking (IPC per window): call off the UI thread.
+     */
+    public boolean isNusukInFront() {
+        try {
+            List<AccessibilityWindowInfo> windows = getWindows(); // top to bottom
+            if (windows == null) return false;
+            AccessibilityWindowInfo front = null;
+            for (AccessibilityWindowInfo w : windows) {
+                if (w.getType() == AccessibilityWindowInfo.TYPE_APPLICATION && (w.isActive() || w.isFocused())) { front = w; break; }
+            }
+            if (front == null) { // nothing focused (transition): the first readable app window
+                for (AccessibilityWindowInfo w : windows) {
+                    if (w.getType() == AccessibilityWindowInfo.TYPE_APPLICATION && w.getRoot() != null) { front = w; break; }
+                }
+            }
+            if (front == null) return false;
+            AccessibilityNodeInfo r = front.getRoot();
+            CharSequence pkg = r != null ? r.getPackageName() : null;
+            return pkg != null && NUSUK_PKG.contentEquals(pkg);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static NusukAccessibilityService getInstance() {
         return instance;
     }

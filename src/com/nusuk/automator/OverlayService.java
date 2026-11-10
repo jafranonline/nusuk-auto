@@ -59,6 +59,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
     private boolean runningUi = false;
     private View btnPace;
     private boolean updatingCount = false;
+    private boolean moveQueued = false;
     private static final int DEFAULT_BATCH = 100, MAX_BATCH = 9999, STEP = 10;
 
     private NusukAccessibilityService.AutomationMode selectedMode = NusukAccessibilityService.AutomationMode.CODES;
@@ -71,22 +72,28 @@ public class OverlayService extends Service implements NusukAccessibilityService
         return null;
     }
 
-    // Close the floating widget once Nusuk has been off screen for AWAY_LIMIT_MS.
-    private static final long AWAY_LIMIT_MS = 30_000;
+    // The widget lives only on top of Nusuk: it closes once the user has been in another app for
+    // AWAY_IDLE_MS (a bit longer mid-run, since Nusuk can hop to a login app and back). Our own
+    // screens don't count as "away"; Nusuk gets START_GRACE_MS to open after the widget starts.
+    private static final long AWAY_IDLE_MS = 4_000, AWAY_RUNNING_MS = 30_000, START_GRACE_MS = 15_000;
+    private static final long FRONT_POLL_MS = 1_000;
     private long lastNusukSeen;
     private volatile boolean destroyed = false;
     private final Runnable awayCheck = new Runnable() {
         @Override public void run() {
-            // Reading Nusuk's windows can block for seconds when Nusuk is busy: never on the UI thread.
+            // Reading windows can block for seconds when Nusuk is busy: never on the UI thread.
+            // The next check is scheduled only after this one is done, so checks never pile up.
             new Thread(() -> {
                 NusukAccessibilityService s = NusukAccessibilityService.getInstance();
-                boolean visible = s == null || s.isRunning() || s.isNusukVisible(); // never close mid-run
+                boolean front = s != null && s.isNusukInFront();
+                boolean running = s != null && s.isRunning();
                 mainHandler.post(() -> {
                     if (destroyed) return;
                     long now = System.currentTimeMillis();
-                    if (visible) lastNusukSeen = now;
-                    else if (now - lastNusukSeen >= AWAY_LIMIT_MS) { stopSelf(); return; }
-                    mainHandler.postDelayed(awayCheck, 5000);
+                    if (front || appOpen) lastNusukSeen = now;
+                    long limit = running ? AWAY_RUNNING_MS : AWAY_IDLE_MS;
+                    if (now - lastNusukSeen >= limit) { stopSelf(); return; }
+                    mainHandler.postDelayed(awayCheck, FRONT_POLL_MS);
                 });
             }, "nusuk-away-check").start();
         }
@@ -97,8 +104,8 @@ public class OverlayService extends Service implements NusukAccessibilityService
         super.onCreate();
         instance = this;
         initOverlayView();
-        lastNusukSeen = System.currentTimeMillis();
-        mainHandler.postDelayed(awayCheck, 5000);
+        lastNusukSeen = System.currentTimeMillis() + START_GRACE_MS - AWAY_IDLE_MS; // Nusuk may take a while to open
+        mainHandler.postDelayed(awayCheck, FRONT_POLL_MS);
         KeyRepository.getInstance(this).registerListener(this);
         ensureServiceListener();
     }
@@ -308,7 +315,14 @@ public class OverlayService extends Service implements NusukAccessibilityService
                     dragging[0] = true;
                     params.x = (int) (initialX + dx);
                     params.y = (int) (initialY + dy);
-                    windowManager.updateViewLayout(overlayView, params);
+                    // At most one window update per frame: touch events come faster than the screen draws.
+                    if (!moveQueued) {
+                        moveQueued = true;
+                        overlayView.postOnAnimation(() -> {
+                            moveQueued = false;
+                            try { windowManager.updateViewLayout(overlayView, params); } catch (Exception ignored) {}
+                        });
+                    }
                     return true;
                 case MotionEvent.ACTION_UP:
                     if (!dragging[0]) v.performClick();
@@ -520,6 +534,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
             mainHandler.removeCallbacks(thinkTick);
             if (thinkBar != null) thinkBar.setVisibility(View.GONE);
             if (tvOverlayStatus != null) tvOverlayStatus.setText(L.t(this, status));
+            thinkDots = 0;
             if ("Thinking...".equals(status)) thinkTick.run(); // live countdown until the answer is tapped
 
             if (tvBadgeCount != null) tvBadgeCount.setText(L.t(this, done + " / " + target));
@@ -529,6 +544,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
     }
 
     private View thinkBar;
+    private int thinkDots = 0;
 
     /** Counts down the "thinking" wait: whole seconds in the status line + a bar along the bottom that empties. */
     private final Runnable thinkTick = new Runnable() {
@@ -539,11 +555,14 @@ public class OverlayService extends Service implements NusukAccessibilityService
                 return;
             }
             // No seconds: "Thinking" with dots that cycle, and the bar shows how long is left.
-            String base = L.t(OverlayService.this, "Thinking...").replaceAll("\\.+$", "");
             int dots = 1 + (int) ((System.currentTimeMillis() / 400) % 3);
-            StringBuilder sb = new StringBuilder(base);
-            for (int i = 0; i < dots; i++) sb.append('.');
-            tvOverlayStatus.setText(sb);
+            if (dots != thinkDots) { // text (and so layout) changes only when the dots do, not every tick
+                thinkDots = dots;
+                String base = L.t(OverlayService.this, "Thinking...").replaceAll("\\.+$", "");
+                StringBuilder sb = new StringBuilder(base);
+                for (int i = 0; i < dots; i++) sb.append('.');
+                tvOverlayStatus.setText(sb);
+            }
             if (thinkBar != null) {
                 long total = Math.max(1, NusukAccessibilityService.thinkTotalMs);
                 thinkBar.setVisibility(View.VISIBLE);

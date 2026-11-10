@@ -319,34 +319,46 @@ public class KeyRepository {
     }
 
     private void writeState() {
-        String data;
+        // Copy under the lock (fast), build the JSON outside it: the UI thread reads the counters
+        // under the same lock, and ~20k codes of JSON used to hold it for a visible stall.
+        final int idx, ver;
+        final long cursor, dSince;
+        final boolean rest;
+        final List<String> succ, inv, pSucc, pInv, already, pAlready, dead, prio, rechecked;
         synchronized (this) {
             savePending = false; // changes from here on schedule another write
-            try {
-                JSONObject json = new JSONObject();
-                json.put("currentIndex", currentIndex);
-                json.put("codesVersion", codesVersion);
-                json.put("codesCursor", codesCursor);
-                JSONArray succArr = new JSONArray();
-                for (String s : successCodes) succArr.put(s);
-                json.put("success", succArr);
-                JSONArray invArr = new JSONArray();
-                for (String s : invalidCodes) invArr.put(s);
-                json.put("invalid", invArr);
-                json.put("pendingSuccess", new JSONArray(pendingSuccess));
-                json.put("pendingInvalid", new JSONArray(pendingInvalid));
-                json.put("already", new JSONArray(alreadyCodes));
-                json.put("pendingAlready", new JSONArray(pendingAlready));
-                json.put("dead", new JSONArray(deadCodes));
-                json.put("deadSince", deadSince);
-                json.put("serverPriority", new JSONArray(serverPriority));
-                json.put("restored", restored);
-                json.put("priorityRechecked", new JSONArray(priorityRechecked));
-                data = json.toString();
-            } catch (Exception e) {
-                Log.e(TAG, "Error building state", e);
-                return;
-            }
+            idx = currentIndex; ver = codesVersion; cursor = codesCursor; dSince = deadSince; rest = restored;
+            succ = new ArrayList<>(successCodes);
+            inv = new ArrayList<>(invalidCodes);
+            pSucc = new ArrayList<>(pendingSuccess);
+            pInv = new ArrayList<>(pendingInvalid);
+            already = new ArrayList<>(alreadyCodes);
+            pAlready = new ArrayList<>(pendingAlready);
+            dead = new ArrayList<>(deadCodes);
+            prio = new ArrayList<>(serverPriority);
+            rechecked = new ArrayList<>(priorityRechecked);
+        }
+        String data;
+        try {
+            JSONObject json = new JSONObject();
+            json.put("currentIndex", idx);
+            json.put("codesVersion", ver);
+            json.put("codesCursor", cursor);
+            json.put("success", new JSONArray(succ));
+            json.put("invalid", new JSONArray(inv));
+            json.put("pendingSuccess", new JSONArray(pSucc));
+            json.put("pendingInvalid", new JSONArray(pInv));
+            json.put("already", new JSONArray(already));
+            json.put("pendingAlready", new JSONArray(pAlready));
+            json.put("dead", new JSONArray(dead));
+            json.put("deadSince", dSince);
+            json.put("serverPriority", new JSONArray(prio));
+            json.put("restored", rest);
+            json.put("priorityRechecked", new JSONArray(rechecked));
+            data = json.toString();
+        } catch (Exception e) {
+            Log.e(TAG, "Error building state", e);
+            return;
         }
         writeAtomic(STATE_FILE, data);
     }

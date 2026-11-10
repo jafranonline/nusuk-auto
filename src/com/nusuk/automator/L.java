@@ -26,6 +26,8 @@ final class L {
 
     private static final Map<String, String> EXACT = new HashMap<>();
     private static final Map<String, String> RULES = new LinkedHashMap<>();
+    /** Compiled once: bn() runs on the UI thread for every status line, so never compile per call. */
+    private static final Map<String, Pattern> PATTERNS = new java.util.concurrent.ConcurrentHashMap<>();
 
     private L() {}
 
@@ -93,7 +95,7 @@ final class L {
             if (r != null) return key.substring(0, i) + digits(r);
         }
         for (Map.Entry<String, String> e : RULES.entrySet()) {
-            Matcher m = Pattern.compile(e.getKey(), Pattern.DOTALL).matcher(key);
+            Matcher m = PATTERNS.computeIfAbsent(e.getKey(), k -> Pattern.compile(k, Pattern.DOTALL)).matcher(key);
             if (m.matches()) {
                 String out = e.getValue();
                 for (int g = 1; g <= m.groupCount(); g++) out = out.replace("$" + g, "\u0001" + (char) ('a' + g));
