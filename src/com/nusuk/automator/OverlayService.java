@@ -80,7 +80,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
             // Reading Nusuk's windows can block for seconds when Nusuk is busy: never on the UI thread.
             new Thread(() -> {
                 NusukAccessibilityService s = NusukAccessibilityService.getInstance();
-                boolean visible = s == null || s.isNusukVisible();
+                boolean visible = s == null || s.isRunning() || s.isNusukVisible(); // never close mid-run
                 mainHandler.post(() -> {
                     if (destroyed) return;
                     long now = System.currentTimeMillis();
@@ -206,6 +206,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
 
         tvProgress = overlayView.findViewById(R.id.tvProgress);
         tvOverlayStatus = overlayView.findViewById(R.id.tvOverlayStatus);
+        thinkBar = overlayView.findViewById(R.id.thinkBar);
         tvBadgeCount = overlayView.findViewById(R.id.tvBadgeCount);
 
         btnModeCodes = overlayView.findViewById(R.id.btnModeCodes);
@@ -516,7 +517,10 @@ public class OverlayService extends Service implements NusukAccessibilityService
         mainHandler.post(() -> {
             if (tvProgress != null) tvProgress.setText(L.t(this, done + " / " + target));
             if (tvSubStats != null) tvSubStats.setText(L.t(this, "✓ " + success + "   ✗ " + invalid));
+            mainHandler.removeCallbacks(thinkTick);
+            if (thinkBar != null) thinkBar.setVisibility(View.GONE);
             if (tvOverlayStatus != null) tvOverlayStatus.setText(L.t(this, status));
+            if ("Thinking...".equals(status)) thinkTick.run(); // live countdown until the answer is tapped
 
             if (tvBadgeCount != null) tvBadgeCount.setText(L.t(this, done + " / " + target));
             setActionRunning(done, target);
@@ -524,12 +528,44 @@ public class OverlayService extends Service implements NusukAccessibilityService
         });
     }
 
+    private View thinkBar;
+
+    /** Counts down the "thinking" wait: whole seconds in the status line + a bar along the bottom that empties. */
+    private final Runnable thinkTick = new Runnable() {
+        @Override public void run() {
+            long left = NusukAccessibilityService.thinkDeadline - System.currentTimeMillis();
+            if (left <= 0 || tvOverlayStatus == null) {
+                if (thinkBar != null) thinkBar.setVisibility(View.GONE);
+                return;
+            }
+            // No seconds: "Thinking" with dots that cycle, and the bar shows how long is left.
+            String base = L.t(OverlayService.this, "Thinking...").replaceAll("\\.+$", "");
+            int dots = 1 + (int) ((System.currentTimeMillis() / 400) % 3);
+            StringBuilder sb = new StringBuilder(base);
+            for (int i = 0; i < dots; i++) sb.append('.');
+            tvOverlayStatus.setText(sb);
+            if (thinkBar != null) {
+                long total = Math.max(1, NusukAccessibilityService.thinkTotalMs);
+                thinkBar.setVisibility(View.VISIBLE);
+                thinkBar.setPivotX(0);
+                thinkBar.setScaleX(Math.min(1f, left / (float) total));
+            }
+            mainHandler.postDelayed(this, 50);
+        }
+    };
+
     @Override
     public void onStopped(String reason) {
         Log.i(TAG, "Overlay onStopped -> " + reason);
         mainHandler.post(() -> {
+            mainHandler.removeCallbacks(thinkTick);
+            if (thinkBar != null) thinkBar.setVisibility(View.GONE);
             if (tvOverlayStatus != null) tvOverlayStatus.setText(L.t(this, reason));
             setActionIdle();
+            // Run finished: the count goes back to the default and the counters start from 0 again.
+            selectBatch(DEFAULT_BATCH);
+            if (tvProgress != null) tvProgress.setText(L.t(this, "0 / " + selectedBatchCount));
+            if (tvBadgeCount != null) tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
             updateUiStats();
             if (overlayView != null) overlayView.invalidate();
         });

@@ -142,11 +142,14 @@
                 android:textSize="15sp" />
         </LinearLayout>
 
-        <!-- Status + progress -->
+        <!-- Status + progress (the thin bar along the bottom edge fills while "thinking") -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
             android:background="@drawable/status_row_bg"
             android:gravity="center_vertical"
             android:minHeight="40dp"
@@ -156,11 +159,6 @@
             android:paddingStart="10dp"
             android:paddingTop="7dp">
 
-            <View
-                android:layout_width="7dp"
-                android:layout_height="7dp"
-                android:background="@drawable/dot_sky" />
-
             <TextView
                 android:id="@+id/tvOverlayStatus"
                 android:fontFamily="@font/plex_light"
@@ -168,7 +166,6 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
-                android:layout_marginStart="7dp"
                 android:layout_weight="1"
                 android:autoSizeMaxTextSize="15sp"
                 android:autoSizeMinTextSize="10sp"
@@ -193,6 +190,16 @@
                 android:textColor="#A9D3F0"
                 android:textSize="18sp" />
         </LinearLayout>
+            <View
+                android:id="@+id/thinkBar"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:layout_gravity="bottom"
+                android:layout_marginEnd="10dp"
+                android:layout_marginStart="10dp"
+                android:background="#7FC4F2"
+                android:visibility="gone" />
+        </FrameLayout>
 
         <!-- Dynamic count: [-] [input] [+] (hidden while running) -->
         <LinearLayout

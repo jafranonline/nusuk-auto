@@ -241,7 +241,12 @@ public class NusukAccessibilityService extends AccessibilityService {
             if (windows == null) return true; // can't tell: don't close anything
             for (AccessibilityWindowInfo w : windows) {
                 AccessibilityNodeInfo r = w.getRoot();
-                if (r == null) continue;
+                if (r == null) {
+                    // Nusuk's window often has no readable root while it is busy or changing page.
+                    // An app window we can't read might be Nusuk: don't treat that as "left".
+                    if (w.getType() == AccessibilityWindowInfo.TYPE_APPLICATION) return true;
+                    continue;
+                }
                 CharSequence pkg = r.getPackageName();
                 if (pkg != null && NUSUK_PKG.contentEquals(pkg)) return true;
             }
@@ -1612,9 +1617,10 @@ public class NusukAccessibilityService extends AccessibilityService {
         // Normal pace: "read and think" before tapping. Fast: tap at once.
         long think = QuizPace.thinkDelayMs(this);
         if (think > 0) {
-            lastThinkSecs = (think + 999) / 1000;
-            notifyProgress("Thinking... " + lastThinkSecs + "s");
             thinkUntil = System.currentTimeMillis() + think;
+            thinkTotalMs = think;
+            thinkDeadline = thinkUntil; // the floating widget runs its own live countdown to this
+            notifyProgress("Thinking...");
             pendingSince = thinkUntil; // keep the 20 s timeout from counting the wait
             scheduleNextStep(think);
             return;
@@ -1622,15 +1628,13 @@ public class NusukAccessibilityService extends AccessibilityService {
         stepPendingAnswer(snapshot());
     }
 
-    private long lastThinkSecs = -1;
+    /** When the current "thinking" wait ends (uptime-independent wall clock); read by the widget's timer. */
+    static volatile long thinkDeadline = 0, thinkTotalMs = 1;
     private long thinkUntil = 0; // Normal pace: no answer tap before this time
 
     private void stepPendingAnswer(Screen screen) {
         long thinkLeft = thinkUntil - System.currentTimeMillis();
         if (thinkLeft > 0) {
-            // Countdown in the floating widget: whole seconds left, ticking once a second.
-            long secs = (thinkLeft + 999) / 1000;
-            if (secs != lastThinkSecs) { lastThinkSecs = secs; notifyProgress("Thinking... " + secs + "s"); }
             scheduleNextStep(Math.min(thinkLeft, 1000));
             return;
         }
