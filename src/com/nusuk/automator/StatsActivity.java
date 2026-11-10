@@ -29,6 +29,8 @@ public class StatsActivity extends ScreenActivity {
         int codesTotal = KeyRepository.getInstance(this).getSuccessCount();
         int quizTotal = Stats.quizTotal(this);
 
+        content.addView(text("This is your own usage on this phone.", 14, 0xFF78716C), lp(-2, -2, 0));
+
         // ----- today + total -----
         LinearLayout top = new LinearLayout(this);
         top.setOrientation(LinearLayout.HORIZONTAL);
@@ -36,7 +38,7 @@ public class StatsActivity extends ScreenActivity {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
         lp.setMarginStart(px(10));
         top.addView(bigStat("Quiz today", Stats.quizToday(this), "Total " + quizTotal), lp);
-        content.addView(top, lp(-1, -2, 0));
+        content.addView(top, lp(-1, -2, 14));
 
         // ----- by date -----
         label("By date", 22);

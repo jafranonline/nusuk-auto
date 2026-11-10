@@ -26,7 +26,8 @@ import java.util.concurrent.Executors;
  *   {"versionCode":6, "versionName":"1.2", "minVersionCode":0, "url":"...", "notes":"..."}
  * Newer versionCode -> "Update available" dialog (Later hides it for a day).
  * This app below minVersionCode -> the dialog can't be dismissed (forced update).
- * "Update" opens the download link in the browser: the same way users installed the app.
+ * "Update" downloads and installs the new APK inside the app (ApkInstaller); if that is not possible
+ * the user can still get it from the website.
  */
 final class UpdateChecker {
     private static final String TAG = "UpdateChecker";
@@ -42,7 +43,7 @@ final class UpdateChecker {
     /** What the server says, or null when unknown. */
     static final class Info {
         int versionCode, minVersionCode;
-        String versionName, url, notes;
+        String versionName, url, notes, sha256;
     }
 
     interface Listener {
@@ -117,6 +118,7 @@ final class UpdateChecker {
         i.versionName = j.optString("versionName", "");
         i.url = j.optString("url", DEFAULT_URL);
         i.notes = j.optString("notes", "");
+        i.sha256 = j.optString("sha256", "");
         return i;
     }
 
@@ -177,7 +179,8 @@ final class UpdateChecker {
                 .setTitle(L.t(a, forced ? "Update required" : "Update available") + " (v" + info.versionName + ")")
                 .setMessage(msg)
                 .setCancelable(!forced)
-                .setPositiveButton(L.t(a, "Update"), (d, w) -> openDownload(a, info));
+                .setPositiveButton(L.t(a, "Update"), (d, w) -> ApkInstaller.start(a, info))
+                .setNeutralButton(L.t(a, "Website"), (d, w) -> openDownload(a, info));
         if (!forced) {
             b.setNegativeButton(L.t(a, "Later"), (d, w) -> prefs(a).edit()
                     .putInt("snoozedCode", info.versionCode)

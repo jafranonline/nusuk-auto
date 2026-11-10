@@ -101,8 +101,6 @@ public class NusukAccessibilityService extends AccessibilityService {
     private int pendingDoorTries = 0;
     private boolean quizSolvingInProgress = false;
     private long quizStartTime = 0;
-    // When the optional pause between quizzes ends (0 = no pause pending). See QuizPace.
-    private long nextQuizAt = 0;
     // Large font sizes make the quiz and result pages taller than the screen: their buttons are
     // then below the fold (or missing from the node tree until scrolled to).
     private static final int MAX_PAGE_SCROLLS = 4;
@@ -461,7 +459,6 @@ public class NusukAccessibilityService extends AccessibilityService {
         this.pendingDoor = -1;
         this.quizSolvingInProgress = false;
         this.quizReq++;
-        this.nextQuizAt = 0;
         this.pageScrolls = 0;
         this.revealTries = 0;
         this.roundStartedAt = 0;
@@ -712,19 +709,9 @@ public class NusukAccessibilityService extends AccessibilityService {
                         stopAutomation("Done (" + batchProcessed + " quizzes, " + quizCorrectCount + " ✓)");
                         return;
                     }
-                    // Optional human-like pause before the next quiz (Nusuk may throttle instant answers)
-                    long gap = QuizPace.gapDelayMs(this);
-                    nextQuizAt = gap > 0 ? System.currentTimeMillis() + gap : 0;
+                    // No pause between quizzes: the door is chosen at once. Only the answer is delayed (QuizPace).
                 }
 
-                // Re-checked every second, so turning the pause off mid-wait takes effect at once.
-                long waitLeft = nextQuizAt - System.currentTimeMillis();
-                if (nextQuizAt > 0 && waitLeft > 0 && QuizPace.isOn(this)) {
-                    notifyProgress("Next quiz in " + ((waitLeft + 999) / 1000) + "s (" + batchProcessed + "/" + targetBatchCount + ")");
-                    scheduleNextStep(Math.min(1000, waitLeft));
-                    return;
-                }
-                nextQuizAt = 0;
 
                 if (revealIfHidden(playAgainBtn, screen)) {
                     notifyProgress("Scrolling to Play again...");
@@ -1063,7 +1050,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                         codeAttempts = 0;
                     }
                     if (currentCode == null) {
-                        stopAutomation("All keys tested!");
+                        stopAutomation("All codes tested!");
                         return;
                     }
 
@@ -1619,7 +1606,7 @@ public class NusukAccessibilityService extends AccessibilityService {
         pendingSince = System.currentTimeMillis();
         pendingNextStepMs = nextStepMs;
         // Normal pace: "read and think" before tapping. Fast: tap at once.
-        long think = QuizPace.thinkDelayMs(this, lastQuestion == null ? 0 : lastQuestion.length());
+        long think = QuizPace.thinkDelayMs(this);
         if (think > 0) {
             notifyProgress("Thinking...");
             thinkUntil = System.currentTimeMillis() + think;

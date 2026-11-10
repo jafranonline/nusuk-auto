@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.nusuk.automator"
-    android:versionCode="14"
-    android:versionName="2.0">
+    android:versionCode="15"
+    android:versionName="2.1">
 
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- lets the app install its own updates (ApkInstaller) -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -44,6 +46,8 @@
 
         <activity android:name=".DeveloperActivity" android:exported="false" />
         <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".AddKeysActivity" android:exported="false" />
+        <receiver android:name=".InstallReceiver" android:exported="false" />
         <activity android:name=".StatsActivity" android:exported="false" />
         <activity android:name=".NotificationsActivity" android:exported="false" android:launchMode="singleTop" />
 

@@ -6,7 +6,7 @@ import android.view.Gravity;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-/** App settings: language (English / Bangla) and the pace of the quiz automation (Normal / Fast). */
+/** App settings: language (English / Bangla), the pace of the quiz automation, adding keys, updates. */
 public class SettingsActivity extends ScreenActivity {
     private static final int BLUE = 0xFF3E7CB1, BLUE_SOFT = 0xFFEAF2F9, GREY_LINE = 0xFFD6D3D1;
 
@@ -59,6 +59,38 @@ public class SettingsActivity extends ScreenActivity {
     }
 
     private Choice optNormal, optFast, optEn, optBn;
+    private LinearLayout rangeBox;
+    private TextView minVal, maxVal;
+
+    /** "Shortest 2 s  [-] [+]" row for one end of the thinking-time range. */
+    private LinearLayout stepper(String title, boolean isMin) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.addView(text(title, 15, 0xFF1C1917), new LinearLayout.LayoutParams(0, -2, 1));
+        TextView minus = pill("−", 0, false, 0, () -> step(isMin, -1));
+        TextView val = text("", 16, 0xFF1C1917);
+        val.setGravity(Gravity.CENTER);
+        val.setTypeface(getResources().getFont(R.font.plex_medium));
+        TextView plus = pill("+", 0, false, 0, () -> step(isMin, 1));
+        minus.setMinHeight(px(36)); plus.setMinHeight(px(36));
+        minus.setMinWidth(px(48)); plus.setMinWidth(px(48));
+        minus.setContentDescription(L.t(this, title) + " −");
+        plus.setContentDescription(L.t(this, title) + " +");
+        row.addView(minus);
+        row.addView(val, new LinearLayout.LayoutParams(px(64), -2));
+        row.addView(plus);
+        if (isMin) minVal = val; else maxVal = val;
+        return row;
+    }
+
+    private void step(boolean isMin, int d) {
+        int lo = QuizPace.minSec(this), hi = QuizPace.maxSec(this);
+        if (isMin) { lo += d; if (lo > hi) hi = lo; }
+        else { hi += d; if (hi < lo) lo = hi; }
+        QuizPace.setRange(this, lo, hi);
+        render();
+    }
 
     @Override
     protected String screenTitle() {
@@ -145,13 +177,28 @@ public class SettingsActivity extends ScreenActivity {
         LinearLayout c = card(8);
         c.addView(text("Choose how fast the quiz is played.", 14, 0xFF44403C));
         optNormal = new Choice("Normal (recommended)",
-                "Takes a few seconds per question and pauses between quizzes, like a real person. Safest for your account.",
+                "Thinks for a moment before giving each answer, like a real person. The next door is chosen at once. Safest for your account.",
                 () -> setPace(true));
         optFast = new Choice("Fast",
                 "No waiting at all. Quicker, but looks like a bot and your account may get limited.",
                 () -> setPace(false));
         c.addView(optNormal.row, lp(-1, -2, 14));
         c.addView(optFast.row, lp(-1, -2, 10));
+
+        rangeBox = new LinearLayout(this);
+        rangeBox.setOrientation(LinearLayout.VERTICAL);
+        rangeBox.addView(text("Thinking time before each answer", 14, 0xFF44403C), lp(-2, -2, 0));
+        rangeBox.addView(stepper("Shortest", true), lp(-1, -2, 8));
+        rangeBox.addView(stepper("Longest", false), lp(-1, -2, 8));
+        c.addView(rangeBox, lp(-1, -2, 16));
+
+        label("Your codes", 22);
+        LinearLayout kc = card(8);
+        kc.addView(text("Found some Nusuk codes? Add them to the shared list so everyone can use them.", 14, 0xFF44403C));
+        TextView addKeys = pill("Add your own codes", 0, false, 0, () -> startActivity(new Intent(this, AddKeysActivity.class)));
+        addKeys.setMinHeight(px(36));
+        kc.addView(addKeys, lp(-2, -2, 14));
+
         label("Share", 22);
         LinearLayout shc = card(8);
         shc.addView(text("Know someone who does Umrah quizzes? Share the app with them.", 14, 0xFF44403C));
@@ -178,7 +225,7 @@ public class SettingsActivity extends ScreenActivity {
         r.append("Android: ").append(android.os.Build.VERSION.RELEASE).append(" (API ")
                 .append(android.os.Build.VERSION.SDK_INT).append(")\n")
          .append("Device: ").append(android.os.Build.MANUFACTURER).append(' ').append(android.os.Build.MODEL).append('\n')
-         .append("Language: ").append(L.lang(this)).append("  Pace: ").append(QuizPace.isOn(this) ? "normal" : "fast").append('\n');
+         .append("Language: ").append(L.lang(this)).append("  Pace: ").append(QuizPace.isOn(this) ? "normal " + QuizPace.minSec(this) + "-" + QuizPace.maxSec(this) + "s" : "fast").append('\n');
         String en = android.provider.Settings.Secure.getString(getContentResolver(),
                 android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
         r.append("Accessibility on: ").append(en != null && en.contains(getPackageName())).append('\n');
@@ -219,5 +266,8 @@ public class SettingsActivity extends ScreenActivity {
         boolean bn = L.isBn(this);
         optEn.setSelected(!bn);
         optBn.setSelected(bn);
+        rangeBox.setVisibility(normal ? android.view.View.VISIBLE : android.view.View.GONE);
+        minVal.setText(L.t(this, QuizPace.minSec(this) + " s"));
+        maxVal.setText(L.t(this, QuizPace.maxSec(this) + " s"));
     }
 }

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#26A07A1C">
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#26FFFFFF">
     <item><shape android:shape="rectangle">
-        <gradient android:angle="315" android:startColor="#FFF1CC" android:centerColor="#FFFAF0" android:endColor="#E6E0FA" />
-        <stroke android:width="1dp" android:color="#F0E4C4" />
+        <gradient android:angle="315" android:startColor="#102043" android:endColor="#1F3C66" />
+        <stroke android:width="1dp" android:color="#2D4A75" />
         <corners android:radius="20dp" />
     </shape></item>
 </ripple>

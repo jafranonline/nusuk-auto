@@ -14,8 +14,8 @@ final class Links {
     static final String GITHUB_URL = "https://github.com/jafranonline";
     static final String WEB_URL = "https://jafran.dev";
     static final String DEV_NAME = "Jafran Hasan";
-    /** The Facebook post users share to spread the app (it carries the download link). */
-    static final String SHARE_URL = "https://www.facebook.com/share/p/1CEffGd9mB/";
+    /** The link users share to spread the app: our website (download + tutorials). */
+    static final String SHARE_URL = "https://nusuk.minbars.net/";
     static final String FITAN_URL = "https://alfitan.com/";
 
     private Links() {}
@@ -47,7 +47,7 @@ final class Links {
         open(c, url);
     }
 
-    /** Opens the share sheet with a short message and the post link (Facebook keeps only the link, other apps keep both). */
+    /** Opens the share sheet with a short message and the website link. */
     static void share(Context c) {
         String msg = L.isBn(c)
                 ? "নুসুক অ্যাপের কোড আর কুইজ নিজে থেকেই করে দেয় Nusuk Auto। ফ্রী ডাউনলোড:\n" + SHARE_URL

@@ -88,6 +88,8 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         findViewById(R.id.btnBell).setOnClickListener(v -> startActivity(new Intent(this, NotificationsActivity.class)));
         tvBellBadge = findViewById(R.id.tvBellBadge);
         findViewById(R.id.btnCredit).setOnClickListener(v -> openFacebook(groupUrl()));
+        findViewById(R.id.btnAddKeys).setOnClickListener(v -> startActivity(new Intent(this, AddKeysActivity.class)));
+        findViewById(R.id.btnShare).setOnClickListener(v -> Links.share(this));
         setupDevCredit();
         findViewById(R.id.cardFitan).setOnClickListener(v -> openUrl(Links.FITAN_URL));
 
@@ -170,11 +172,11 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         Notices.checkSoon(this);
     }
 
-    /** "v1.1", or "Update ↑ v1.2" in gold when a newer version is out (tap = check now). */
+    /** "Version 1.1", or "Update available: Version 1.2" in gold when a newer version is out (tap = check now). */
     private void renderVersionBadge(UpdateChecker.Info newer) {
         if (tvAppVersion == null) return;
         if (newer != null) {
-            tvAppVersion.setText(L.t(this, "Update \u2191 v" + newer.versionName));
+            tvAppVersion.setText(L.t(this, "Update available: Version " + newer.versionName));
             tvAppVersion.setTextColor(0xFFB45309);
             return;
         }
@@ -182,7 +184,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         try {
             version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {}
-        tvAppVersion.setText(L.t(this, "v" + version));
+        tvAppVersion.setText(L.t(this, "Version " + version));
         tvAppVersion.setTextColor(getColor(R.color.text_secondary));
     }
 
@@ -224,8 +226,11 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     private void showResetTime(JSONObject st) {
         if (isFinishing()) return;
         long at = st.optLong("resetAt", 0);
-        tvQuizReset.setVisibility(at > 0 ? View.VISIBLE : View.GONE);
-        if (at <= 0) return;
+        // Only once today's limit is used up (the server says so with a TRIAL_ENDED denial), not while questions are left.
+        JSONObject denied = st.optJSONObject("denied");
+        boolean limitReached = denied != null && "TRIAL_ENDED".equals(denied.optString("code"));
+        tvQuizReset.setVisibility(at > 0 && limitReached ? View.VISIBLE : View.GONE);
+        if (at <= 0 || !limitReached) return;
         java.util.Date d = new java.util.Date(at * 1000);
         String time = android.text.format.DateFormat.getTimeFormat(this).format(d);
         boolean bdTime = java.util.TimeZone.getDefault().getOffset(d.getTime()) == 6 * 3600_000;
@@ -369,6 +374,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     /** The footer credit (name + chevron) opens the Developer page. */
     private void setupDevCredit() {
         findViewById(R.id.btnSettings).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
+        findViewById(R.id.btnSettingsRow).setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class)));
         findViewById(R.id.btnDevRow).setOnClickListener(v -> startActivity(new Intent(this, DeveloperActivity.class)));
     }
 
