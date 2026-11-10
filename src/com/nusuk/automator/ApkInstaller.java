@@ -66,7 +66,7 @@ final class ApkInstaller {
         box.setPadding(pad, pad, pad, pad / 2);
         TextView status = new TextView(a);
         status.setText(L.t(a, "Downloading..."));
-        status.setTextSize(15);
+        status.setTextSize(17);
         ProgressBar bar = new ProgressBar(a, null, android.R.attr.progressBarStyleHorizontal);
         bar.setMax(100);
         bar.setIndeterminate(true);

@@ -68,7 +68,7 @@ abstract class ScreenActivity extends Activity {
 
     /** Small grey section label above a group of cards. */
     protected void label(String s, int top) {
-        TextView t = text(L.t(this, s).toUpperCase(), 12, 0xFF78716C);
+        TextView t = text(L.t(this, s).toUpperCase(), 13, 0xFF78716C);
         t.setLetterSpacing(0.12f);
         t.setPadding(px(4), 0, 0, 0);
         content.addView(t, lp(-2, -2, top));
@@ -88,7 +88,7 @@ abstract class ScreenActivity extends Activity {
     protected TextView pill(String label, int iconRes, boolean filled, int fillColor, Runnable click) {
         TextView t = new TextView(this);
         t.setText(L.t(this, label));
-        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         t.setGravity(Gravity.CENTER);
         t.setSingleLine(true);
         t.setMinHeight(px(40));

@@ -141,7 +141,7 @@
                         android:singleLine="true"
                         android:text="Codes today"
                         android:textColor="@color/hero_label"
-                        android:textSize="13sp" />
+                        android:textSize="15sp" />
                 </LinearLayout>
 
                 <View
@@ -174,7 +174,7 @@
                         android:singleLine="true"
                         android:text="Quiz today"
                         android:textColor="@color/hero_label"
-                        android:textSize="13sp" />
+                        android:textSize="15sp" />
                 </LinearLayout>
 
                 <ImageView
@@ -222,7 +222,7 @@
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
+                        android:textSize="15sp" />
 
                     <TextView
                         android:id="@+id/tvCodesPct"
@@ -230,7 +230,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <ProgressBar
@@ -275,7 +275,7 @@
                         android:layout_height="wrap_content"
                         android:text="Adding codes"
                         android:textColor="#064E3B"
-                        android:textSize="16sp" />
+                        android:textSize="17sp" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -283,7 +283,7 @@
                         android:layout_marginTop="2dp"
                         android:text="Running in the background"
                         android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
+                        android:textSize="15sp" />
                 </LinearLayout>
 
                 <TextView
@@ -323,7 +323,7 @@
                         android:layout_marginStart="8dp"
                         android:text="Setup required"
                         android:textColor="@color/warn_text"
-                        android:textSize="16sp" />
+                        android:textSize="17sp" />
                 </LinearLayout>
 
                 <TextView
@@ -331,9 +331,9 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:lineSpacingMultiplier="1.2"
-                    android:text="Finish these steps so the app can work inside Nusuk."
+                    android:text="Finish setup to work inside Nusuk."
                     android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:textSize="16sp" />
 
                 <LinearLayout
                     android:id="@+id/rowNusuk"
@@ -354,7 +354,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="10dp"
                         android:text="Nusuk app not installed"
-                        android:textSize="15sp" />
+                        android:textSize="17sp" />
 
                     <TextView
                         android:id="@+id/btnInstallNusuk"
@@ -384,7 +384,7 @@
                         android:id="@+id/tvAccessibilityLabel"
                         android:layout_marginStart="10dp"
                         android:text="Accessibility service"
-                        android:textSize="15sp" />
+                        android:textSize="17sp" />
 
                     <TextView
                         android:id="@+id/btnEnableAccessibility"
@@ -413,7 +413,7 @@
                         android:layout_weight="1"
                         android:layout_marginStart="10dp"
                         android:text="Floating overlay"
-                        android:textSize="15sp" />
+                        android:textSize="17sp" />
 
                     <TextView
                         android:id="@+id/btnEnableOverlay"
@@ -468,9 +468,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="3dp"
-                        android:text="Enter Umrah codes automatically"
+                        android:text="Enters Umrah codes for you"
                         android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:textSize="16sp" />
                 </LinearLayout>
 
                 <FrameLayout
@@ -532,7 +532,7 @@
                         android:layout_marginTop="3dp"
                         android:text="Answers the Nusuk quiz for you"
                         android:textColor="@color/text_secondary"
-                        android:textSize="14sp" />
+                        android:textSize="16sp" />
                     <TextView
                         android:id="@+id/tvQuizReset"
                         android:layout_width="wrap_content"
@@ -540,7 +540,7 @@
                         android:layout_marginTop="4dp"
                         android:visibility="gone"
                         android:textColor="#92400E"
-                        android:textSize="12sp" />
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <FrameLayout
@@ -595,7 +595,7 @@
                         android:layout_weight="1"
                         android:text="Add your own codes"
                         android:textColor="#1C1917"
-                        android:textSize="16sp" />
+                        android:textSize="17sp" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -639,7 +639,7 @@
                         android:layout_weight="1"
                         android:text="Settings"
                         android:textColor="#1C1917"
-                        android:textSize="16sp" />
+                        android:textSize="17sp" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -683,7 +683,7 @@
                         android:layout_weight="1"
                         android:text="Help &amp; guides"
                         android:textColor="#1C1917"
-                        android:textSize="16sp" />
+                        android:textSize="17sp" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -727,7 +727,7 @@
                         android:layout_weight="1"
                         android:text="Join our Facebook group"
                         android:textColor="#1C1917"
-                        android:textSize="16sp" />
+                        android:textSize="17sp" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -771,7 +771,7 @@
                         android:layout_weight="1"
                         android:text="Share the app"
                         android:textColor="#1C1917"
-                        android:textSize="16sp" />
+                        android:textSize="17sp" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -817,7 +817,7 @@
                         android:letterSpacing="0.14"
                         android:text="ALSO BY THE DEVELOPER"
                         android:textColor="#E8C77A"
-                        android:textSize="11sp" />
+                        android:textSize="12sp" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -852,7 +852,7 @@
                         android:lineSpacingMultiplier="1.2"
                         android:text="The first and largest digital archive on Fitan and the end times."
                         android:textColor="#D5DDEA"
-                        android:textSize="14sp" />
+                        android:textSize="16sp" />
 
                     <LinearLayout
                         android:layout_width="wrap_content"
@@ -870,7 +870,7 @@
                             android:layout_height="wrap_content"
                             android:text="Visit alfitan.com"
                             android:textColor="#14284B"
-                            android:textSize="13sp" />
+                            android:textSize="15sp" />
 
                         <ImageView
                             android:layout_width="14dp"
@@ -913,7 +913,7 @@
                 android:paddingEnd="10dp"
                 android:text="About developer"
                 android:textColor="#78716C"
-                android:textSize="13sp" />
+                android:textSize="15sp" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -921,7 +921,7 @@
                 android:importantForAccessibility="no"
                 android:text="·"
                 android:textColor="#D6D3D1"
-                android:textSize="13sp" />
+                android:textSize="15sp" />
 
             <TextView
                 android:id="@+id/tvAppVersion"
@@ -937,7 +937,7 @@
                 android:singleLine="true"
                 android:text="Version 1.0"
                 android:textColor="#A8A29E"
-                android:textSize="13sp" />
+                android:textSize="15sp" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

@@ -38,6 +38,10 @@ final class CodeDownloader {
         if (running) return;
         Context app = ctx.getApplicationContext();
         KeyRepository repo = KeyRepository.getInstance(app);
+        if (!repo.isLoaded()) { // saved list still loading: decide once it is (else it looks empty)
+            repo.whenLoaded(() -> start(app, force));
+            return;
+        }
         boolean empty = repo.getTotalCount() == 0;
         if (!force && !empty && System.currentTimeMillis() - lastDone < RECHECK_MS) return;
         running = true;

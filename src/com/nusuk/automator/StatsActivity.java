@@ -29,7 +29,7 @@ public class StatsActivity extends ScreenActivity {
         int codesTotal = KeyRepository.getInstance(this).getSuccessCount();
         int quizTotal = Stats.quizTotal(this);
 
-        content.addView(text("This is your own usage on this phone.", 14, 0xFF78716C), lp(-2, -2, 0));
+        content.addView(text("This is your own usage on this phone.", 16, 0xFF78716C), lp(-2, -2, 0));
 
         // ----- today + total -----
         LinearLayout top = new LinearLayout(this);
@@ -62,7 +62,7 @@ public class StatsActivity extends ScreenActivity {
             card.addView(row("Before daily tracking", String.valueOf(olderCodes), String.valueOf(olderQuiz), false));
         }
         if (days.isEmpty() && olderCodes == 0 && olderQuiz == 0) {
-            TextView t = text("Nothing yet. Codes you add and questions the app solves are counted here by day.", 14, 0xFF78716C);
+            TextView t = text("Nothing yet. Codes you add and questions the app solves are counted here by day.", 16, 0xFF78716C);
             t.setPadding(0, px(12), 0, px(12));
             card.addView(t);
         }
@@ -76,8 +76,8 @@ public class StatsActivity extends ScreenActivity {
         TextView v = text(String.valueOf(value), 34, 0xFF1C1917);
         v.setTypeface(getResources().getFont(R.font.plex_light));
         c.addView(v);
-        c.addView(text(label, 14, 0xFF1C1917), lp(-2, -2, 2));
-        c.addView(text(sub, 12, 0xFF78716C), lp(-2, -2, 6));
+        c.addView(text(label, 16, 0xFF1C1917), lp(-2, -2, 2));
+        c.addView(text(sub, 13, 0xFF78716C), lp(-2, -2, 6));
         return c;
     }
 

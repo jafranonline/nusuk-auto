@@ -26,7 +26,7 @@ import java.util.concurrent.Executors;
  */
 final class QuizBatch {
     private static final String TAG = "QuizBatch";
-    private static final int BATCH_SIZE = 10;
+    private static final int BATCH_SIZE = 100;
     /** Flush before each answer while this few (or fewer) questions are left, or `left` is unknown. */
     private static final int NEAR_LIMIT = 3;
 

@@ -24,16 +24,16 @@ public class SettingsActivity extends ScreenActivity {
 
             mark = new TextView(SettingsActivity.this);
             mark.setGravity(Gravity.CENTER);
-            mark.setTextSize(13);
+            mark.setTextSize(15);
             mark.setTextColor(0xFFFFFFFF);
             row.addView(mark, new LinearLayout.LayoutParams(px(24), px(24)));
 
             LinearLayout col = new LinearLayout(SettingsActivity.this);
             col.setOrientation(LinearLayout.VERTICAL);
-            TextView t = text(title, 16, 0xFF1C1917);
+            TextView t = text(title, 17, 0xFF1C1917);
             t.setTypeface(getResources().getFont(R.font.plex_medium));
             col.addView(t);
-            if (desc != null) col.addView(text(desc, 13, 0xFF78716C), lp(-2, -2, 3));
+            if (desc != null) col.addView(text(desc, 15, 0xFF78716C), lp(-2, -2, 3));
             LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, -2, 1);
             cp.setMarginStart(px(12));
             row.addView(col, cp);
@@ -67,9 +67,9 @@ public class SettingsActivity extends ScreenActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.addView(text(title, 15, 0xFF1C1917), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(text(title, 17, 0xFF1C1917), new LinearLayout.LayoutParams(0, -2, 1));
         TextView minus = pill("−", 0, false, 0, () -> step(isMin, -1));
-        TextView val = text("", 16, 0xFF1C1917);
+        TextView val = text("", 17, 0xFF1C1917);
         val.setGravity(Gravity.CENTER);
         val.setTypeface(getResources().getFont(R.font.plex_medium));
         TextView plus = pill("+", 0, false, 0, () -> step(isMin, 1));
@@ -119,18 +119,18 @@ public class SettingsActivity extends ScreenActivity {
         try {
             v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {}
-        names.addView(text("Version " + v, 13, 0xFF78716C), lp(-2, -2, 2));
+        names.addView(text("Version " + v, 15, 0xFF78716C), lp(-2, -2, 2));
         LinearLayout.LayoutParams np = new LinearLayout.LayoutParams(0, -2, 1);
         np.setMarginStart(px(14));
         head.addView(names, np);
         a.addView(head);
 
-        a.addView(text("Adds Umrah codes and plays the Nusuk quiz for you, so you save time.", 14, 0xFF44403C), lp(-1, -2, 14));
+        a.addView(text("Adds Umrah codes and plays the Nusuk quiz for you, so you save time.", 16, 0xFF44403C), lp(-1, -2, 14));
 
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        updateStatus = text("", 13, 0xFF15803D);
+        updateStatus = text("", 15, 0xFF15803D);
         row.addView(updateStatus, new LinearLayout.LayoutParams(0, -2, 1));
         updateBtn = pill("Check for updates", 0, false, 0,
                 () -> UpdateChecker.manualCheck(this, this::showUpdateStatus));
@@ -161,7 +161,7 @@ public class SettingsActivity extends ScreenActivity {
         buildAbout();
         label("Language", 22);
         LinearLayout lc = card(8);
-        lc.addView(text("Choose the language of the app.", 14, 0xFF44403C));
+        lc.addView(text("Choose the language of the app.", 16, 0xFF44403C));
         LinearLayout langs = new LinearLayout(this);
         langs.setOrientation(LinearLayout.HORIZONTAL);
         optEn = new Choice("English", null, () -> setLang(L.EN));
@@ -175,7 +175,7 @@ public class SettingsActivity extends ScreenActivity {
 
         label("Quiz pace", 22);
         LinearLayout c = card(8);
-        c.addView(text("Choose how fast the quiz is played.", 14, 0xFF44403C));
+        c.addView(text("Choose how fast the quiz is played.", 16, 0xFF44403C));
         optNormal = new Choice("Normal (recommended)",
                 "Thinks for a moment before giving each answer, like a real person. The next door is chosen at once. Safest for your account.",
                 () -> setPace(true));
@@ -187,28 +187,28 @@ public class SettingsActivity extends ScreenActivity {
 
         rangeBox = new LinearLayout(this);
         rangeBox.setOrientation(LinearLayout.VERTICAL);
-        rangeBox.addView(text("Thinking time before each answer", 14, 0xFF44403C), lp(-2, -2, 0));
+        rangeBox.addView(text("Thinking time before each answer", 16, 0xFF44403C), lp(-2, -2, 0));
         rangeBox.addView(stepper("Shortest", true), lp(-1, -2, 8));
         rangeBox.addView(stepper("Longest", false), lp(-1, -2, 8));
         c.addView(rangeBox, lp(-1, -2, 16));
 
         label("Your codes", 22);
         LinearLayout kc = card(8);
-        kc.addView(text("Found some Nusuk codes? Add them to the shared list so everyone can use them.", 14, 0xFF44403C));
+        kc.addView(text("Found some Nusuk codes? Add them to the shared list so everyone can use them.", 16, 0xFF44403C));
         TextView addKeys = pill("Add your own codes", 0, false, 0, () -> startActivity(new Intent(this, AddKeysActivity.class)));
         addKeys.setMinHeight(px(36));
         kc.addView(addKeys, lp(-2, -2, 14));
 
         label("Share", 22);
         LinearLayout shc = card(8);
-        shc.addView(text("Know someone who does Umrah quizzes? Share the app with them.", 14, 0xFF44403C));
+        shc.addView(text("Know someone who does Umrah quizzes? Share the app with them.", 16, 0xFF44403C));
         TextView shareBtn = pill("Share the app", 0, false, 0, () -> Links.share(this));
         shareBtn.setMinHeight(px(36));
         shc.addView(shareBtn, lp(-2, -2, 14));
 
         label("Support", 22);
         LinearLayout sc = card(8);
-        sc.addView(text("Something not working? Send a report with your app version, phone model and recent errors.", 14, 0xFF44403C));
+        sc.addView(text("Something not working? Send a report with your app version, phone model and recent errors.", 16, 0xFF44403C));
         TextView share = pill("Share debug report", 0, false, 0, this::shareReport);
         share.setMinHeight(px(36));
         sc.addView(share, lp(-2, -2, 14));

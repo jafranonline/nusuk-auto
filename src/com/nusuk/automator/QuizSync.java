@@ -17,7 +17,7 @@ import java.util.concurrent.Executors;
 final class QuizSync {
     private static final String TAG = "QuizSync";
     private static final String PREFS = "quiz_sync";
-    private static final long MIN_GAP_MS = 60_000; // at most one pull a minute
+    private static final long MIN_GAP_MS = 20 * 60_000; // at most one pull every 20 minutes
     private static final ExecutorService exec = Executors.newSingleThreadExecutor();
     private static volatile boolean running = false;
     private static volatile long lastRun = 0;

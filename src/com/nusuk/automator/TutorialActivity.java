@@ -65,7 +65,7 @@ public class TutorialActivity extends Activity {
         error = new TextView(this);
         error.setText(L.t(this, "Couldn't load the tutorials.\nCheck your internet, then tap here to try again."));
         error.setTextColor(0xFFE7E5E4);
-        error.setTextSize(15);
+        error.setTextSize(17);
         error.setGravity(Gravity.CENTER);
         error.setPadding((int) (32 * dp), 0, (int) (32 * dp), 0);
         error.setVisibility(View.GONE);
@@ -81,7 +81,7 @@ public class TutorialActivity extends Activity {
         // Close, where the page's (hidden in-app) "Back to codes" link sits
         TextView close = new TextView(this);
         close.setText(L.t(this, "✕  Close"));
-        close.setTextSize(13);
+        close.setTextSize(15);
         close.setTextColor(0xFFFDE68A);
         int ph = (int) (12 * dp), pv = (int) (6 * dp);
         close.setPadding(ph, pv, ph, pv);

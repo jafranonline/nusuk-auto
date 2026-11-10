@@ -112,6 +112,7 @@ public class NusukAccessibilityService extends AccessibilityService {
     private String lastQuestion = null;
     private List<String> lastOptions = null;
     private String lastAnswer = null;      // the option we picked for lastQuestion
+    private boolean lastVerified = false;   // answer was already confirmed: a right result needs no report
     private String lastSource = null;      // "local" | "server" | "ai" | "guess"
     // A question page taller than the screen (large font) is read top to bottom over several
     // scrolls: Nusuk only exposes what is on screen. The question is the first text read.
@@ -681,7 +682,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                         Stats.questionSolved(this);
                         KeyRepository.getInstance(this).notifyChanged();
                         if (lastAnswer != null) store.markRight(lastQuestion, lastAnswer, lastSource);
-                        if (lastAnswer != null && !"guess".equals(lastSource))
+                        if (lastAnswer != null && !"guess".equals(lastSource) && !lastVerified)
                             QuizBatch.result(this, lastQuestion, lastOptions, lastAnswer, true, batchDenied);
                         Log.i(TAG, "✓ Quiz Correct! (" + quizCorrectCount + " correct, " + quizWrongCount + " wrong, src=" + lastSource + ")");
                         notifyProgress("✓ Correct! (" + (batchProcessed + 1) + "/" + targetBatchCount + ")");
@@ -805,6 +806,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                     int idx = currentOpts.indexOf(known.answer);
                     lastAnswer = known.answer;
                     lastSource = known.source;
+                    lastVerified = known.verified;
                     Log.i(TAG, "Known answer (" + known.source + ") -> Option " + idx);
                     notifyProgress("Selected (saved): " + known.answer);
                     selectAndCheck(req, idx, currentOpts, 800);
@@ -825,6 +827,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                         notifyProgress("Selected: " + currentOpts.get(matchIdx));
                         lastAnswer = currentOpts.get(matchIdx);
                         lastSource = cached ? "server" : "ai";
+                        lastVerified = false;
                         QuizStore.get(NusukAccessibilityService.this).putUnverified(question, lastAnswer, lastSource);
                         selectAndCheck(req, matchIdx, currentOpts, 800);
                     }
@@ -849,6 +852,7 @@ public class NusukAccessibilityService extends AccessibilityService {
                         Log.e(TAG, "QuizSolver error: " + errorMessage + " -> guessing option " + g);
                         lastAnswer = currentOpts.get(g);
                         lastSource = "guess";
+                        lastVerified = false;
                         selectAndCheck(req, g, currentOpts, 600);
                     }
                 }));
@@ -1608,7 +1612,8 @@ public class NusukAccessibilityService extends AccessibilityService {
         // Normal pace: "read and think" before tapping. Fast: tap at once.
         long think = QuizPace.thinkDelayMs(this);
         if (think > 0) {
-            notifyProgress("Thinking...");
+            lastThinkSecs = (think + 999) / 1000;
+            notifyProgress("Thinking... " + lastThinkSecs + "s");
             thinkUntil = System.currentTimeMillis() + think;
             pendingSince = thinkUntil; // keep the 20 s timeout from counting the wait
             scheduleNextStep(think);
@@ -1617,11 +1622,15 @@ public class NusukAccessibilityService extends AccessibilityService {
         stepPendingAnswer(snapshot());
     }
 
+    private long lastThinkSecs = -1;
     private long thinkUntil = 0; // Normal pace: no answer tap before this time
 
     private void stepPendingAnswer(Screen screen) {
         long thinkLeft = thinkUntil - System.currentTimeMillis();
         if (thinkLeft > 0) {
+            // Countdown in the floating widget: whole seconds left, ticking once a second.
+            long secs = (thinkLeft + 999) / 1000;
+            if (secs != lastThinkSecs) { lastThinkSecs = secs; notifyProgress("Thinking... " + secs + "s"); }
             scheduleNextStep(Math.min(thinkLeft, 1000));
             return;
         }

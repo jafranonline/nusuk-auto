@@ -37,7 +37,7 @@ public class KeyRepository {
     // Shared list from the server: codes that failed on several phones and never worked anywhere.
     private final Set<String> deadCodes = new HashSet<>();
     private long deadSince = 0;       // server cursor for dead-list changes
-    private final List<ChangeListener> listeners = new ArrayList<>();
+    private final List<ChangeListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
     private int currentIndex = 0;     // legacy (codes were once tried in order); kept in saved state
     private final Random picker = new Random();
     private Set<String> codeKeys = null; // upper-case copy of allCodes, for de-duplicating downloads
@@ -58,10 +58,44 @@ public class KeyRepository {
     // Priority codes already given their one re-check after being marked invalid (persisted).
     private final Set<String> priorityRechecked = new HashSet<>();
 
+    // The saved state (about 20k codes) is parsed on a background thread so the first screen
+    // doesn't wait for it. The loader holds this object's lock while it works, so every
+    // synchronized method (the automation's) simply waits for it; the UI-facing counters below
+    // return 0 instead of waiting, and listeners are notified when loading is done.
+    private volatile boolean loaded = false;
+    private final List<Runnable> whenLoaded = new ArrayList<>();
+
     private KeyRepository(Context context) {
         this.context = context.getApplicationContext();
-        loadState();
-        CodeSync.syncSoon(this.context, 0);
+        final java.util.concurrent.CountDownLatch lockTaken = new java.util.concurrent.CountDownLatch(1);
+        new Thread(() -> {
+            List<Runnable> run;
+            synchronized (this) {
+                lockTaken.countDown();
+                loadState();
+            }
+            synchronized (whenLoaded) {
+                loaded = true;
+                run = new ArrayList<>(whenLoaded);
+                whenLoaded.clear();
+            }
+            for (Runnable r : run) {
+                try { r.run(); } catch (Exception e) { Log.e(TAG, "whenLoaded", e); }
+            }
+            notifyListeners();
+            CodeSync.syncSoon(this.context, 0);
+        }, "keys-load").start();
+        try { lockTaken.await(); } catch (InterruptedException ignored) {}
+    }
+
+    public boolean isLoaded() { return loaded; }
+
+    /** Runs `r` now if the saved state is loaded, else right after it is (on the loader thread). */
+    public void whenLoaded(Runnable r) {
+        synchronized (whenLoaded) {
+            if (!loaded) { whenLoaded.add(r); return; }
+        }
+        r.run();
     }
 
     public static synchronized KeyRepository getInstance(Context context) {
@@ -71,13 +105,13 @@ public class KeyRepository {
         return instance;
     }
 
-    public synchronized void registerListener(ChangeListener listener) {
+    public void registerListener(ChangeListener listener) {
         if (!listeners.contains(listener)) {
             listeners.add(listener);
         }
     }
 
-    public synchronized void unregisterListener(ChangeListener listener) {
+    public void unregisterListener(ChangeListener listener) {
         listeners.remove(listener);
     }
 
@@ -96,30 +130,41 @@ public class KeyRepository {
         }
     }
 
-    public synchronized int getTotalCount() {
-        return allCodes.size();
+    public int getTotalCount() {
+        if (!loaded) return 0; // never block the UI thread on the initial load
+        synchronized (this) { return allCodes.size(); }
     }
 
-    public synchronized int getSuccessCount() {
-        return successCodes.size();
+    public int getSuccessCount() {
+        if (!loaded) return 0; // never block the UI thread on the initial load
+        synchronized (this) { return successCodes.size(); }
     }
 
-    public synchronized int getInvalidCount() {
-        return invalidCodes.size();
+    public int getInvalidCount() {
+        if (!loaded) return 0; // never block the UI thread on the initial load
+        synchronized (this) { return invalidCodes.size(); }
     }
 
-    public synchronized int getAlreadyCount() {
-        return alreadyCodes.size();
+    public int getAlreadyCount() {
+        if (!loaded) return 0; // never block the UI thread on the initial load
+        synchronized (this) { return alreadyCodes.size(); }
     }
 
     /** Codes in the CURRENT list not tested yet (history can include codes from older lists). */
-    public synchronized int getRemainingCount() {
-        if (remainingCache < 0) {
-            int n = 0;
-            for (String c : allCodes) if (!isTested(c) && !deadCodes.contains(c.toUpperCase(Locale.US))) n++;
-            remainingCache = n;
+    public int getRemainingCount() {
+        if (!loaded) return 0;
+        synchronized (this) {
+            if (remainingCache < 0) {
+                int n = 0;
+                for (String c : allCodes) {
+                    String u = c.toUpperCase(Locale.US); // once per code
+                    if (!successCodes.contains(u) && !invalidCodes.contains(u) && !alreadyCodes.contains(u)
+                            && !deadCodes.contains(u)) n++;
+                }
+                remainingCache = n;
+            }
+            return remainingCache;
         }
-        return remainingCache;
     }
 
     private boolean isTested(String code) {

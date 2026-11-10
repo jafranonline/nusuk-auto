@@ -146,7 +146,7 @@ final class L {
         x("Stop", "থামান");
         x("Stopped", "থামানো হয়েছে");
         x("Setup required", "সেটআপ প্রয়োজন");
-        x("Finish these steps so the app can work inside Nusuk.", "অ্যাপটি যেন নুসুকের ভেতরে কাজ করতে পারে, তাই এই ধাপগুলো সম্পন্ন করো।");
+        x("Finish setup to work inside Nusuk.", "নুসুকের ভেতরে কাজ করতে সেটআপ শেষ করো।");
         x("Nusuk app not installed", "নুসুক অ্যাপ ইনস্টল করা নেই");
         x("Install", "ইনস্টল");
         x("Accessibility service", "অ্যাক্সেসিবিলিটি সার্ভিস");
@@ -156,7 +156,7 @@ final class L {
         x("Floating overlay", "ভাসমান ওভারলে");
         x("Allow", "অনুমতি দাও");
         x("Add codes", "কোড অ্যাড করো");
-        x("Enter Umrah codes automatically", "ওমরাহ কোড নিজে থেকেই দেওয়া হবে");
+        x("Enters Umrah codes for you", "ওমরাহ কোড নিজে থেকেই দেওয়া হবে");
         x("Play quiz", "কুইজ খেলো");
         x("Answers the Nusuk quiz for you", "তোমার হয়ে নুসুক কুইজের উত্তর দেয়");
         x("Help", "সাহায্য");
@@ -215,6 +215,7 @@ final class L {
         x("Resuming...", "আবার শুরু হচ্ছে...");
         x("Done", "শেষ");
         x("Thinking...", "ভাবছে...");
+        r("Thinking\\.\\.\\. (\\d+)s", "ভাবছে... $1 সেকেন্ড");
         x("Scrolling to Play again...", "'Play again'-এ স্ক্রল করছে...");
         x("Confirming door...", "দরজা নিশ্চিত করছে...");
         x("Scrolling down...", "নিচে স্ক্রল করছে...");
@@ -311,14 +312,14 @@ final class L {
         x("Adding codes", "কোড অ্যাড হচ্ছে");
         x("Stop", "থামাও");
         x("Setup required", "সেটআপ করতে হবে");
-        x("Finish these steps so the app can work inside Nusuk.", "অ্যাপটা নুসুকের ভেতরে কাজ করার জন্য এই স্টেপগুলো শেষ করো।");
+        x("Finish setup to work inside Nusuk.", "নুসুকের ভেতরে কাজ করতে সেটআপ শেষ করো।");
         x("Accessibility stopped: turn it off and on", "অ্যাক্সেসিবিলিটি বন্ধ হয়ে গেছে, অফ করে আবার অন করো");
         x("Enable", "অন করো");
         x("Fix", "ঠিক করো");
         x("Floating overlay", "ফ্লোটিং ওভারলে");
         x("Allow", "অ্যালাউ করো");
         x("Add codes", "কোড অ্যাড করো");
-        x("Enter Umrah codes automatically", "ওমরাহ কোড অটো এন্টার হবে");
+        x("Enters Umrah codes for you", "ওমরাহ কোড অটো এন্টার হবে");
         x("Play quiz", "কুইজ খেলো");
         x("Answers the Nusuk quiz for you", "তোমার হয়ে নুসুক কুইজ সলভ করে");
         x("Help", "হেল্প");

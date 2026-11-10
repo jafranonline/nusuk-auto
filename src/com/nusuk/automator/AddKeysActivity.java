@@ -29,13 +29,13 @@ public class AddKeysActivity extends ScreenActivity {
     @Override
     protected void build() {
         LinearLayout c = card(0);
-        c.addView(text("Paste your codes below, one or many, in any format. Codes look like NG-p36wAxup. We check each one and add the new ones to the shared list.", 14, 0xFF44403C));
+        c.addView(text("Paste your codes below, one or many, in any format. Codes look like NG-p36wAxup. We check each one and add the new ones to the shared list.", 16, 0xFF44403C));
 
         input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         input.setMinLines(6);
         input.setGravity(Gravity.TOP | Gravity.START);
-        input.setTextSize(15);
+        input.setTextSize(17);
         input.setTextColor(0xFF1C1917);
         input.setHint(L.t(this, "NG-xxxxxxxx"));
         input.setHintTextColor(0xFFA8A29E);
@@ -128,7 +128,7 @@ public class AddKeysActivity extends ScreenActivity {
         c.setOrientation(LinearLayout.VERTICAL);
         c.setBackgroundResource(R.drawable.item_card);
         c.setPadding(px(16), px(14), px(16), px(14));
-        c.addView(text(msg, 14, color));
+        c.addView(text(msg, 16, color));
         results.addView(c, lp(-1, -2, 12));
     }
 
@@ -139,7 +139,7 @@ public class AddKeysActivity extends ScreenActivity {
         c.setPadding(px(16), px(14), px(16), px(14));
         TextView t = new TextView(this);
         t.setText(L.t(this, title));
-        t.setTextSize(15);
+        t.setTextSize(17);
         t.setTextColor(color);
         t.setTypeface(getResources().getFont(R.font.plex_medium));
         c.addView(t);
@@ -148,7 +148,7 @@ public class AddKeysActivity extends ScreenActivity {
         if (keys.size() > MAX_SHOWN) sb.append("+ ").append(keys.size() - MAX_SHOWN).append(" ...");
         TextView list = new TextView(this);
         list.setText(sb.toString().trim());
-        list.setTextSize(13);
+        list.setTextSize(15);
         list.setTextColor(0xFF57534E);
         list.setTypeface(android.graphics.Typeface.MONOSPACE);
         list.setTextIsSelectable(true);

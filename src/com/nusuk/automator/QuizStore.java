@@ -147,13 +147,13 @@ public final class QuizStore extends SQLiteOpenHelper {
     }
 
     /** The server's answer for exactly this question + option set, as on-screen option text (or null). */
-    private String serverLookup(String question, List<String> options) {
+    private Pick serverLookup(String question, List<String> options) {
         String h = serverKey(question, options);
         if (h.isEmpty()) return null;
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT answer FROM server_answers WHERE h = ?", new String[]{h})) {
+        try (Cursor c = getReadableDatabase().rawQuery("SELECT answer, verified FROM server_answers WHERE h = ?", new String[]{h})) {
             if (c.moveToFirst()) {
                 String a = serverNorm(c.getString(0));
-                for (String o : options) if (serverNorm(o).equals(a)) return o;
+                for (String o : options) if (serverNorm(o).equals(a)) return new Pick(o, "shared", c.getInt(1) == 1);
             }
         } catch (Exception e) {
             Log.e(TAG, "serverLookup", e);
@@ -173,7 +173,9 @@ public final class QuizStore extends SQLiteOpenHelper {
     /** Answer + where it came from. */
     public static final class Pick {
         public final String answer, source;
-        Pick(String a, String s) { answer = a; source = s; }
+        /** Already confirmed (by Nusuk on this phone, or verified on the server): a right result teaches the server nothing. */
+        public final boolean verified;
+        Pick(String a, String s, boolean v) { answer = a; source = s; verified = v; }
     }
 
     /**
@@ -182,11 +184,11 @@ public final class QuizStore extends SQLiteOpenHelper {
      */
     public Pick best(String question, List<String> options) {
         String v = lookup(question, options, true);
-        if (v != null) return new Pick(v, "local");
-        String s = serverLookup(question, options);
-        if (s != null && !isKnownWrong(question, s)) return new Pick(s, "shared");
+        if (v != null) return new Pick(v, "local", true);
+        Pick s = serverLookup(question, options);
+        if (s != null && !isKnownWrong(question, s.answer)) return s;
         String u = lookup(question, options, false);
-        return u != null ? new Pick(u, "local") : null;
+        return u != null ? new Pick(u, "local", false) : null;
     }
 
     public int serverCount() {

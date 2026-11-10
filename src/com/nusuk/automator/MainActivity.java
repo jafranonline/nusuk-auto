@@ -167,7 +167,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         checkPermissions();
         updateStats();
         updateRunning();
-        refreshQuizStatus(null);
+        if (System.currentTimeMillis() - lastStatusFetch > STATUS_MIN_GAP_MS) refreshQuizStatus(null); // not on every resume: saves server calls
         UpdateChecker.autoCheck(this, this::renderVersionBadge);
         Notices.checkSoon(this);
     }
@@ -190,7 +190,11 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
 
     // ===== Play Quiz access =====
 
+    private static final long STATUS_MIN_GAP_MS = 5 * 60_000;
+    private static long lastStatusFetch = 0;
+
     private void refreshQuizStatus(Runnable then) {
+        lastStatusFetch = System.currentTimeMillis();
         QuizSolver.fetchStatus(this, new QuizSolver.JsonCallback() {
             @Override
             public void onResult(JSONObject json) {
@@ -283,6 +287,10 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     }
 
     private void launch(String mode) {
+        if ("CODES".equals(mode) && !KeyRepository.getInstance(this).isLoaded()) {
+            Toast.makeText(this, L.t(this, "Loading codes\u2026"), Toast.LENGTH_SHORT).show();
+            return;
+        }
         if ("CODES".equals(mode) && KeyRepository.getInstance(this).getTotalCount() == 0) {
             Toast.makeText(this, L.t(this, CodeDownloader.running ? "Codes are still downloading\u2026" : "No codes yet. Connect to the internet and tap the banner to retry."), Toast.LENGTH_SHORT).show();
             CodeDownloader.start(this, false);
@@ -438,6 +446,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         runOnUiThread(() -> {
             updateStats();
             updateRunning();
+            updateCodesBanner();
         });
     }
 }

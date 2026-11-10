@@ -37,10 +37,10 @@ public class DeveloperActivity extends ScreenActivity {
 
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.addView(text(title, 16, 0xFF1C1917));
+        col.addView(text(title, 17, 0xFF1C1917));
         TextView s = new TextView(this); // an address, never translated
         s.setText(sub);
-        s.setTextSize(13);
+        s.setTextSize(15);
         s.setTextColor(0xFF78716C);
         col.addView(s, lp(-2, -2, 1));
         LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, -2, 1);
@@ -82,7 +82,7 @@ public class DeveloperActivity extends ScreenActivity {
         TextView name = text(Links.DEV_NAME, 22, 0xFF1C1917);
         name.setGravity(Gravity.CENTER);
         c.addView(name, lp(-2, -2, 14));
-        TextView role = text("Developer of Nusuk Auto", 14, 0xFF78716C);
+        TextView role = text("Developer of Nusuk Auto", 16, 0xFF78716C);
         role.setGravity(Gravity.CENTER);
         c.addView(role, lp(-2, -2, 3));
 
@@ -102,12 +102,12 @@ public class DeveloperActivity extends ScreenActivity {
         // ----- the app -----
         label("About the app", 22);
         LinearLayout about = card(8);
-        about.addView(text("Nusuk Auto is an unofficial helper made for Nusuk users. It is not connected to the Nusuk app or the Ministry of Hajj and Umrah.", 14, 0xFF44403C));
-        about.addView(text("Questions, problems or ideas? Open Help for step-by-step fixes, or write in the Facebook group or to the developer.", 14, 0xFF44403C), lp(-1, -2, 10));
+        about.addView(text("Nusuk Auto is an unofficial helper made for Nusuk users. It is not connected to the Nusuk app or the Ministry of Hajj and Umrah.", 16, 0xFF44403C));
+        about.addView(text("Questions, problems or ideas? Open Help for step-by-step fixes, or write in the Facebook group or to the developer.", 16, 0xFF44403C), lp(-1, -2, 10));
         String v = "";
         try {
             v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
         } catch (Exception ignored) {}
-        about.addView(text("Version " + v, 13, 0xFF78716C), lp(-2, -2, 12));
+        about.addView(text("Version " + v, 15, 0xFF78716C), lp(-2, -2, 12));
     }
 }
