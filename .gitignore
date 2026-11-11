@@ -1,0 +1,28 @@
+# Build output (rebuilt by build.sh)
+build/
+*.apk
+*.aab
+*.dex
+*.class
+
+# Release signing key + password (never commit; backup kept outside the repo)
+signing.keystore
+signing.properties
+*.keystore
+*.jks
+*.p12
+*.pem
+
+# Secrets / local config
+.env*
+.dev.vars
+local.properties
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Logs
+*.log
