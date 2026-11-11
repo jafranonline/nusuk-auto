@@ -58,61 +58,11 @@ On Android 13 and newer, an app installed from an APK file has its Accessibility
 out at first. Open **Settings > Apps > Nusuk Auto > three dots (top right) > Allow restricted
 settings**, then turn on Nusuk Auto in Accessibility.
 
-## Build
-
-There is no Gradle. The build is one shell script that calls the Android SDK tools directly:
-`aapt2` (resources), `javac` (Java 17), `d8` (dex), `zipalign` and `apksigner`.
-
-You need:
-
-- macOS with Android command line tools from Homebrew, platform `android-35` and build tools
-  `35.0.0`. The paths are at the top of `build.sh`; change them for another setup.
-- JDK 17 or newer, and `d8`, `zip` and `adb` on your `PATH`.
-- The release signing key (see below).
-
-```bash
-./build.sh
-```
-
-This writes `build/nusuk-auto.apk` and installs it with `adb` if a phone is connected.
-
-### Signing key
-
-`build.sh` expects two files next to it. Both are git-ignored and must never be committed:
-
-- `signing.keystore`: the release key
-- `signing.properties`: one line, `KS_PASS=<password>`
-
-Every release must be signed with the same key. Android refuses an update signed with a
-different one, and users would have to uninstall and lose their saved progress. The build
-checks the certificate fingerprint and fails if it does not match.
-
-To build your own copy for testing, create your own keystore and remove the fingerprint check
-at the end of step 7 in `build.sh`. Such a build cannot update an official install.
-
-## Release
-
-1. Raise `android:versionCode` (by 1) and `android:versionName` in `AndroidManifest.xml`.
-2. Run:
-
-```bash
-./publish.sh --notes "What changed" [--min N]
-```
-
-It builds, then uploads `nusuk-auto.apk`, `nusuk-auto-<code>.apk` (kept for rollback) and
-`version.json` to the Cloudflare R2 bucket. The app reads `version.json` to learn about the
-update. `--min N` forces an update on phones below versionCode `N`.
-
-`publish.sh` uses the `wrangler` login from the web project and expects it at `../web`, so run
-releases from the main project checkout, not from a standalone clone of this repo.
-
 ## Project layout
 
 ```
 .
 ├── AndroidManifest.xml     package, version, permissions, components
-├── build.sh                build + sign + install
-├── publish.sh              build + upload a release
 ├── assets/
 │   └── quiz_seed.json      verified quiz answers shipped with the app
 ├── res/                    layouts, drawables, fonts (IBM Plex, OFL), strings
@@ -146,9 +96,9 @@ are served from `files-nusuk.minbars.net`. Every request carries the anonymous d
 
 ## About this repository
 
-This repo is a mirror of the `android/` folder of the main Nusuk project, with its history.
-Changes are made in the main project and pushed here with:
+This repository holds the app's source code only, with its history. Build, signing and release
+tooling is not part of it: releases are built and published by the developer from a private
+setup, and the signing key is never stored in any repository.
 
-```bash
-git subtree push --prefix=android android main
-```
+The official APK is the one on <https://nusuk.minbars.net>. A copy built from this source and
+signed with another key cannot update an official install.
