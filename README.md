@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/logo.svg" width="96" height="96" alt="Nusuk Auto logo">
+
 # Nusuk Auto
 
 **An Android helper that enters key codes and plays the door quiz in the Nusuk Umrah challenge, so you don't have to tap for hours.**
@@ -10,13 +12,15 @@
 [![Dependencies](https://img.shields.io/badge/third--party%20libraries-0-success)](#architecture)
 [![Interface](https://img.shields.io/badge/interface-English%20%7C%20%E0%A6%AC%E0%A6%BE%E0%A6%82%E0%A6%B2%E0%A6%BE-0a7ea4)](#features)
 
-[**Download the app**](https://nusuk.minbars.net) &nbsp;·&nbsp; [Facebook group](https://www.facebook.com/groups/nusukauto/) &nbsp;·&nbsp; [Developer](https://jafran.dev)
+[**Download APK**](https://nusuk.minbars.net/download) &nbsp;·&nbsp; [Website](https://nusuk.minbars.net) &nbsp;·&nbsp; [Video tutorial](https://nusuk.minbars.net/tutorial) &nbsp;·&nbsp; [Help](https://nusuk.minbars.net/help) &nbsp;·&nbsp; [Facebook group](https://www.facebook.com/groups/nusukauto/)
 
 <br>
 
 <img src="docs/screenshots/home.png" width="250" alt="Home screen"> &nbsp;
 <img src="docs/screenshots/settings.png" width="250" alt="Settings: language and quiz pace"> &nbsp;
 <img src="docs/screenshots/stats.png" width="250" alt="Statistics screen">
+
+<sub>Home &nbsp;·&nbsp; Settings &nbsp;·&nbsp; Statistics</sub>
 
 </div>
 
@@ -40,6 +44,8 @@
 - [Contributing](#contributing)
 - [Security](#security)
 - [License](#license)
+- [Links](#links)
+- [Credits](#credits)
 
 ## What it does
 
@@ -47,6 +53,12 @@ The Nusuk challenge gives a key for every valid code you enter, and each key ope
 one quiz question. Doing that by hand means typing hundreds of codes and answering hundreds of
 questions. Nusuk Auto sits on top of the official Nusuk app as a small floating widget and does
 both for you.
+
+<p align="center">
+  <img src="docs/screenshots/widget.png" width="330" alt="The Nusuk Auto widget floating over the Nusuk app, Quiz mode selected">
+  <br>
+  <sub>The widget over the Nusuk app: pick Codes or Quiz, set how many, press Start.</sub>
+</p>
 
 | Mode | What happens |
 |---|---|
@@ -101,10 +113,13 @@ flowchart LR
 
 ## Install
 
-1. Download the APK from <https://nusuk.minbars.net>.
+1. Download the APK: <https://nusuk.minbars.net/download> (or from the [website](https://nusuk.minbars.net)).
 2. Open it. If Play Protect warns about an unknown app, choose **Install anyway**.
 3. Open Nusuk Auto and follow the two setup steps on the home screen: allow the floating
    overlay, then turn on Nusuk Auto in Accessibility.
+
+Prefer to watch? The [video tutorial](https://nusuk.minbars.net/tutorial) shows every step in
+English and Bangla, and the [Help page](https://nusuk.minbars.net/help) has fixes for common problems.
 
 > [!TIP]
 > On Android 13 and newer, an app installed from an APK file has its Accessibility switch greyed
@@ -191,7 +206,7 @@ adb install -r build/nusuk-auto-debug.apk
 ├── assets/
 │   └── quiz_seed.json         verified quiz answers shipped with the app
 ├── res/                       layouts, drawables, fonts (IBM Plex, OFL), strings
-├── docs/screenshots/          images used in this README
+├── docs/                      logo and screenshots used in this README
 └── src/com/nusuk/automator/
     ├── NusukAccessibilityService.java   entry point Android binds to (name is fixed)
     ├── automation/            the engine that reads and drives the Nusuk screen
@@ -306,6 +321,50 @@ to build it in order to check it or to contribute a fix. Please ask before you r
 or publish an app based on it.
 
 The bundled IBM Plex fonts are under the SIL Open Font License (`assets/OFL-IBM-Plex.txt`).
+
+## Links
+
+| | |
+|---|---|
+| Download (latest APK) | <https://nusuk.minbars.net/download> |
+| Website | <https://nusuk.minbars.net> |
+| Video tutorial | <https://nusuk.minbars.net/tutorial> |
+| Help and fixes | <https://nusuk.minbars.net/help> |
+| Community (Facebook group) | <https://www.facebook.com/groups/nusukauto/> |
+| Source code | <https://github.com/jafranonline/nusuk-auto> |
+
+The APK on the website is the only official build. Nusuk Auto is not on Google Play.
+
+## Credits
+
+<table>
+  <tr>
+    <td width="96"><img src="res/drawable-nodpi/dev_avatar.jpg" width="80" height="80" alt="Jafran Hasan"></td>
+    <td>
+      <b>Jafran Hasan</b><br>
+      Design, development and maintenance.<br>
+      <a href="https://jafran.dev">jafran.dev</a> &nbsp;·&nbsp;
+      <a href="https://github.com/jafranonline">GitHub</a> &nbsp;·&nbsp;
+      <a href="https://www.facebook.com/jafranonline/">Facebook</a>
+    </td>
+  </tr>
+</table>
+
+**Thanks to**
+
+- **The Nusuk Auto community.** Members of the [Facebook group](https://www.facebook.com/groups/nusukauto/)
+  share key codes, test every release on their own phones and report what breaks.
+- **IBM Plex** by IBM, the typeface used across the app, under the
+  [SIL Open Font License 1.1](assets/OFL-IBM-Plex.txt).
+- **Android Open Source Project.** The app is built with the Android SDK and its build tools only.
+- **Cloudflare Workers, D1 and R2**, which host the server, its database and the app downloads.
+
+**Also by the developer:** [Al Fitan](https://alfitan.com/), a digital archive on the trials and
+signs of the Hour.
+
+**Trademarks.** "Nusuk" and the Nusuk logo belong to their owner. They are used here only to say
+which app this helper works with. Nusuk Auto is not affiliated with, endorsed by or sponsored by
+Nusuk or the Saudi Ministry of Hajj and Umrah.
 
 ---
 
