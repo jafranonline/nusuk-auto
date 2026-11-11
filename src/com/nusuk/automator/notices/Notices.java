@@ -59,7 +59,11 @@ public final class Notices {
     /** Registers the periodic background check (no-op when already scheduled). */
     public static void schedule(Context c) {
         JobScheduler js = c.getSystemService(JobScheduler.class);
-        if (js == null || js.getPendingJob(JOB_ID) != null) return;
+        if (js == null) return;
+        // A job saved by an older version can still point at NoticeJob's old class name, which no
+        // longer exists: that one never runs, so it is replaced (same id) instead of kept.
+        JobInfo pending = js.getPendingJob(JOB_ID);
+        if (pending != null && NoticeJob.class.getName().equals(pending.getService().getClassName())) return;
         JobInfo job = new JobInfo.Builder(JOB_ID, new ComponentName(c, NoticeJob.class))
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setPeriodic(PERIOD_MS)
