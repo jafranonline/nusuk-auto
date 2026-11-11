@@ -93,30 +93,53 @@ and its password are kept offline and are not in any repository.
 
 ```
 .
-├── AndroidManifest.xml     package, version, permissions, components
+├── AndroidManifest.xml        package, version, permissions, components
 ├── assets/
-│   └── quiz_seed.json      verified quiz answers shipped with the app
-├── res/                    layouts, drawables, fonts (IBM Plex, OFL), strings
+│   └── quiz_seed.json         verified quiz answers shipped with the app
+├── res/                       layouts, drawables, fonts (IBM Plex, OFL), strings
 └── src/com/nusuk/automator/
+    ├── NusukAccessibilityService.java   entry point Android binds to (name is fixed)
+    ├── automation/            the engine that reads and drives the Nusuk screen
+    ├── overlay/               the floating widget
+    ├── codes/                 key codes: local list, download, backup, "Add keys"
+    ├── quiz/                  quiz answers: local store, sync, server calls, pacing
+    ├── update/                in-app update
+    ├── notices/               announcements
+    ├── stats/                 counters and the Stats screen
+    ├── ui/                    app screens: home, settings, help, developer
+    └── core/                  shared by all: device id, language, links
 ```
 
-Main source files:
+## Architecture
 
-| File | Role |
-|---|---|
-| `NusukAccessibilityService.java` | The main loop. Reads the Nusuk screen and drives Codes and Quiz mode. |
-| `OverlayService.java` | The floating widget. |
-| `MainActivity.java` | Home screen: setup checks, mode cards, counters. |
-| `KeyRepository.java` | Local list of codes and their results. |
-| `CodeDownloader.java`, `CodeSync.java` | Pull the code list; back up tried codes. |
-| `KeySubmit.java`, `AddKeysActivity.java` | "Add keys": find keys in pasted text and send them. |
-| `QuizStore.java`, `QuizSync.java` | Answers kept on the phone, and syncing them from the server. |
-| `QuizSolver.java`, `QuizBatch.java` | Ask the server for an answer; report results in batches. |
-| `QuizPace.java` | The random thinking time. |
-| `UpdateChecker.java`, `ApkInstaller.java`, `InstallReceiver.java` | In-app update. |
-| `Notices.java`, `NoticeJob.java`, `NotificationsActivity.java` | Announcements. |
-| `L.java` | English to Bangla translation of every text in the app. |
-| `SettingsActivity.java`, `StatsActivity.java`, `TutorialActivity.java`, `DeveloperActivity.java` | The other screens. |
+The code is grouped by feature, not by type. Each package holds everything one feature needs
+(its data, its server calls and its screen), so a change to a feature stays in one folder.
+
+| Package | Classes | Role |
+|---|---|---|
+| *(root)* | `NusukAccessibilityService` | Empty subclass of `AutomationService`. Exists only to keep the service's name. |
+| `automation` | `AutomationService` | The main loop. Reads the Nusuk screen through the accessibility API and runs Codes and Quiz mode. |
+| `overlay` | `OverlayService` | The floating widget: mode, start, stop, live progress. |
+| `codes` | `KeyRepository`, `CodeDownloader`, `CodeSync`, `KeySubmit`, `AddKeysActivity` | Local list of codes and results, pulling the list, backing up tried codes, adding the user's own keys. |
+| `quiz` | `QuizStore`, `QuizSync`, `QuizSolver`, `QuizBatch`, `QuizPace` | Answers kept on the phone (SQLite), syncing them, asking the server, reporting results in batches, the random thinking time. |
+| `update` | `UpdateChecker`, `ApkInstaller`, `InstallReceiver` | Version check, download, SHA-256 check, install. |
+| `notices` | `Notices`, `NoticeJob`, `NotificationsActivity` | Background check for announcements and the screen that lists them. |
+| `stats` | `Stats`, `StatsActivity` | Today and all-time counters. |
+| `ui` | `MainActivity`, `SettingsActivity`, `TutorialActivity`, `DeveloperActivity`, `ScreenActivity` | App screens that are not part of one feature. `ScreenActivity` is the base for the simple pages. |
+| `core` | `Access`, `L`, `Links` | Anonymous device id, English to Bangla translation, outside links. |
+
+**Dependencies.** `core` depends on nothing in the app, and every other package may use it.
+Feature packages (`codes`, `quiz`, `update`, `notices`, `stats`) hold data and server calls.
+`automation` uses `codes`, `quiz` and `stats` to do its work, and reports to `overlay`. `ui` sits
+on top and may use everything. A class is `public` only when another package needs it.
+
+**Names Android remembers.** Two component names are stored on users' phones and must not change:
+
+- `com.nusuk.automator.NusukAccessibilityService`: Android keeps "switched on in Accessibility"
+  under this name. Renaming it would switch the service off for every user at the next update.
+  That is why the root class exists and the real code lives in `automation.AutomationService`.
+- `com.nusuk.automator.MainActivity`: the launcher entry. It is an `<activity-alias>` in the
+  manifest that points to `ui.MainActivity`, so existing home screen icons keep working.
 
 ## Server
 

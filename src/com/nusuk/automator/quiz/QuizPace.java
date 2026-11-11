@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.quiz;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -12,7 +12,7 @@ import java.util.Random;
  * next quiz) happens at once. Fast = no waiting at all.
  * The pref key "on" is kept from the old on/off switch: on = Normal, off = Fast.
  */
-final class QuizPace {
+public final class QuizPace {
     private static final String PREFS = "quiz_pace";
     private static final String KEY_ON = "on", KEY_MIN = "minSec", KEY_MAX = "maxSec";
     private static final Random RANDOM = new Random();
@@ -27,24 +27,24 @@ final class QuizPace {
     }
 
     /** True = Normal (human-like), false = Fast. */
-    static boolean isOn(Context c) {
+    public static boolean isOn(Context c) {
         return prefs(c).getBoolean(KEY_ON, true);
     }
 
-    static void setOn(Context c, boolean on) {
+    public static void setOn(Context c, boolean on) {
         prefs(c).edit().putBoolean(KEY_ON, on).apply();
     }
 
-    static int minSec(Context c) {
+    public static int minSec(Context c) {
         return clamp(prefs(c).getInt(KEY_MIN, DEFAULT_MIN_SEC));
     }
 
-    static int maxSec(Context c) {
+    public static int maxSec(Context c) {
         return Math.max(minSec(c), clamp(prefs(c).getInt(KEY_MAX, DEFAULT_MAX_SEC)));
     }
 
     /** Saves the range in seconds; the longest wait is never below the shortest. */
-    static void setRange(Context c, int min, int max) {
+    public static void setRange(Context c, int min, int max) {
         min = clamp(min);
         max = Math.max(min, clamp(max));
         prefs(c).edit().putInt(KEY_MIN, min).putInt(KEY_MAX, max).apply();
@@ -55,10 +55,10 @@ final class QuizPace {
     }
 
     /** Call when a run starts (kept for callers; nothing is carried between runs any more). */
-    static void resetRun() {}
+    public static void resetRun() {}
 
     /** Wait before tapping the answer: random in the chosen range (Normal only; Fast returns 0). */
-    static long thinkDelayMs(Context c) {
+    public static long thinkDelayMs(Context c) {
         if (!isOn(c)) return 0;
         long lo = minSec(c) * 1000L, hi = maxSec(c) * 1000L;
         return lo + (long) (RANDOM.nextDouble() * (hi - lo));

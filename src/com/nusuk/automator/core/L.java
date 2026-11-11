@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.core;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -19,8 +19,8 @@ import java.util.regex.Pattern;
  * is on (exact match first, then pattern rules for texts with numbers / codes inside).
  * Texts that aren't listed (server messages, the user's own data) stay as they are.
  */
-final class L {
-    static final String EN = "en", BN = "bn";
+public final class L {
+    public static final String EN = "en", BN = "bn";
     private static final String PREFS = "language", KEY = "lang";
     private static volatile String lang = null;
 
@@ -33,7 +33,7 @@ final class L {
 
     // ---------- language choice ----------
 
-    static String lang(Context c) {
+    public static String lang(Context c) {
         String l = lang;
         if (l == null) {
             SharedPreferences p = c.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE);
@@ -43,29 +43,29 @@ final class L {
         return l;
     }
 
-    static boolean isBn(Context c) {
+    public static boolean isBn(Context c) {
         return BN.equals(lang(c));
     }
 
-    static void set(Context c, String l) {
+    public static void set(Context c, String l) {
         lang = BN.equals(l) ? BN : EN;
         c.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY, lang).apply();
     }
 
-    static Locale locale(Context c) {
+    public static Locale locale(Context c) {
         return isBn(c) ? new Locale("bn", "BD") : Locale.getDefault();
     }
 
     // ---------- translating ----------
 
     /** The text in the chosen language. */
-    static String t(Context c, String s) {
+    public static String t(Context c, String s) {
         if (s == null || s.isEmpty() || !isBn(c)) return s;
         return bn(s);
     }
 
     /** Translates every TextView's text and every content description under {@code root}. Call once after inflating. */
-    static void view(Context c, View root) {
+    public static void view(Context c, View root) {
         if (root == null || !isBn(c)) return;
         if (root instanceof TextView) {
             TextView tv = (TextView) root;

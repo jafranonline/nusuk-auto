@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.codes;
 
 import android.content.Context;
 import android.util.Log;
@@ -20,6 +20,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.Access;
+
 /**
  * Backs up this phone's tested codes to the server (/api/app/progress), keyed by the device id
  * (ANDROID_ID hash: the same after uninstall/reinstall as long as the APK keeps its signing key).
@@ -27,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * Every reply also carries the current priority keys. Offline is fine: results stay pending
  * (persisted by KeyRepository) and go up on a later try.
  */
-final class CodeSync {
+public final class CodeSync {
     private static final String TAG = "CodeSync";
     /** Results are batched: one upload at most this long after a new result. */
     static final long PUSH_DELAY_MS = 20_000;
@@ -45,7 +48,7 @@ final class CodeSync {
     private CodeSync() {}
 
     /** Runs a sync within `delayMs` (an earlier scheduled one is kept). */
-    static synchronized void syncSoon(Context ctx, long delayMs) {
+    public static synchronized void syncSoon(Context ctx, long delayMs) {
         final Context app = ctx.getApplicationContext();
         long at = System.currentTimeMillis() + delayMs;
         if (pending != null && !pending.isDone() && pendingAt <= at) return;

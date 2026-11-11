@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.quiz;
 
 import android.content.ContentValues;
 import android.content.Context;

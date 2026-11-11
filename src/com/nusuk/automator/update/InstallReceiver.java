@@ -1,10 +1,12 @@
-package com.nusuk.automator;
+package com.nusuk.automator.update;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInstaller;
 import android.widget.Toast;
+
+import com.nusuk.automator.core.L;
 
 /** Gets the installer's answer for ApkInstaller: shows Android's "Update?" screen, or tells why it failed. */
 public class InstallReceiver extends BroadcastReceiver {

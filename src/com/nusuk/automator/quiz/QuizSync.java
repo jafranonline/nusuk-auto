@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.quiz;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
  * questions are answered on the phone with no API call. Pulls only what changed since the last
  * pull (the server's cursor). Runs when the app opens and when a quiz run starts.
  */
-final class QuizSync {
+public final class QuizSync {
     private static final String TAG = "QuizSync";
     private static final String PREFS = "quiz_sync";
     private static final long MIN_GAP_MS = 20 * 60_000; // at most one pull every 20 minutes
@@ -24,7 +24,7 @@ final class QuizSync {
 
     private QuizSync() {}
 
-    static void syncSoon(Context context) {
+    public static void syncSoon(Context context) {
         final Context ctx = context.getApplicationContext();
         if (running || System.currentTimeMillis() - lastRun < MIN_GAP_MS) return;
         running = true;

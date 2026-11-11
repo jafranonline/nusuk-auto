@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.notices;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -26,13 +26,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.Access;
+
 /**
  * Announcements sent from the admin page (/admin -> Notifications), shown as system notifications.
  * No Firebase: the phone asks /api/app/notices every ~15 min (JobScheduler, survives reboots) and
  * whenever the app opens. The server answers with notices newer than the last id seen.
  * The very first check after install only records the latest id, so old announcements never pop up.
  */
-final class Notices {
+public final class Notices {
     private static final String TAG = "Notices";
     static final String CHANNEL = "announcements";
     private static final int JOB_ID = 4201;
@@ -43,7 +46,7 @@ final class Notices {
     private static final int HISTORY_MAX = 60;
 
     /** Called (from a background thread) after a check stored new notices; screens refresh themselves. */
-    static volatile Runnable onChange;
+    public static volatile Runnable onChange;
 
     private static final ExecutorService exec = Executors.newSingleThreadExecutor();
 
@@ -54,7 +57,7 @@ final class Notices {
     }
 
     /** Registers the periodic background check (no-op when already scheduled). */
-    static void schedule(Context c) {
+    public static void schedule(Context c) {
         JobScheduler js = c.getSystemService(JobScheduler.class);
         if (js == null || js.getPendingJob(JOB_ID) != null) return;
         JobInfo job = new JobInfo.Builder(JOB_ID, new ComponentName(c, NoticeJob.class))
@@ -67,7 +70,7 @@ final class Notices {
     }
 
     /** App open: check now (throttled), off the main thread. */
-    static void checkSoon(Context c) {
+    public static void checkSoon(Context c) {
         Context app = c.getApplicationContext();
         SharedPreferences p = prefs(app);
         long now = System.currentTimeMillis();
@@ -139,7 +142,7 @@ final class Notices {
         }
     }
 
-    static int unreadCount(Context c) {
+    public static int unreadCount(Context c) {
         long read = prefs(c).getLong("readUpTo", 0);
         JSONArray h = history(c);
         int n = 0;
@@ -160,7 +163,7 @@ final class Notices {
         prefs(c).edit().putString("history", "[]").apply();
     }
 
-    static void ensureChannel(Context c) {
+    public static void ensureChannel(Context c) {
         NotificationManager nm = c.getSystemService(NotificationManager.class);
         if (nm == null || nm.getNotificationChannel(CHANNEL) != null) return;
         NotificationChannel ch = new NotificationChannel(CHANNEL, "Announcements", NotificationManager.IMPORTANCE_HIGH);

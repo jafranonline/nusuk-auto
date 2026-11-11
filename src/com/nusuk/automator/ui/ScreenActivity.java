@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.ui;
 
 import android.app.Activity;
 import android.graphics.drawable.GradientDrawable;
@@ -11,8 +11,13 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.L;
+import com.nusuk.automator.core.Links;
+import com.nusuk.automator.overlay.OverlayService;
+
 /** Base for the simple pages (Help, Developer, Notifications): green top bar + scrolling content built in code. */
-abstract class ScreenActivity extends Activity {
+public abstract class ScreenActivity extends Activity {
     protected LinearLayout content;
     protected TextView barAction;
     protected float dp;

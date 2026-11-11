@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.notices;
 
 import android.app.job.JobParameters;
 import android.app.job.JobService;

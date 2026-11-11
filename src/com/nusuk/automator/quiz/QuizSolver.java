@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.quiz;
 
 import android.content.Context;
 import android.os.Handler;
@@ -18,6 +18,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.Access;
 
 /**
  * Talks to the Play Quiz API. Every call carries this phone's device id. The server decides who

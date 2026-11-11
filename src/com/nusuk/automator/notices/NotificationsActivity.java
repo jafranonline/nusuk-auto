@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.notices;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -10,6 +10,11 @@ import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.L;
+import com.nusuk.automator.core.Links;
+import com.nusuk.automator.ui.ScreenActivity;
 
 /** Every announcement sent from the server, newest first (kept on the phone). */
 public class NotificationsActivity extends ScreenActivity {

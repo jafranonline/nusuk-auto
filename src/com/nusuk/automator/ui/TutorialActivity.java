@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.ui;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -18,6 +18,9 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import com.nusuk.automator.core.L;
+import com.nusuk.automator.overlay.OverlayService;
 
 /**
  * The website's tutorial (/tutorial: videos) or Help (/help: step-by-step fixes) page in a WebView,

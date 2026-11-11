@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.codes;
 
 import android.content.Context;
 import android.util.Log;
@@ -16,25 +16,28 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.Access;
+
 /**
  * The APK ships without codes: this pulls the list from the server (/api/app/codes) in pages,
  * resuming from the cursor saved with the list. Runs on the first open, and again (cheaply: only
  * keys newer than the cursor) whenever the app is opened after a few hours.
  */
-final class CodeDownloader {
+public final class CodeDownloader {
     private static final String TAG = "CodeDownloader";
     private static final long RECHECK_MS = 6 * 60 * 60 * 1000L;
 
-    static volatile boolean running = false;
-    static volatile boolean failed = false;
-    static volatile int serverTotal = 0;
-    static volatile Runnable onProgress; // set by the screen that shows progress (any thread)
+    public static volatile boolean running = false;
+    public static volatile boolean failed = false;
+    public static volatile int serverTotal = 0;
+    public static volatile Runnable onProgress; // set by the screen that shows progress (any thread)
     private static long lastDone = 0;
 
     private CodeDownloader() {}
 
     /** Starts a download if the list is empty, or the last full check is old. `force` skips the age check. */
-    static synchronized void start(Context ctx, boolean force) {
+    public static synchronized void start(Context ctx, boolean force) {
         if (running) return;
         Context app = ctx.getApplicationContext();
         KeyRepository repo = KeyRepository.getInstance(app);

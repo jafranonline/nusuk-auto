@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.codes;
 
 import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
@@ -11,6 +11,10 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.L;
+import com.nusuk.automator.ui.ScreenActivity;
 
 /** Paste any text with Nusuk keys in it; they are checked and added to the shared key list. */
 public class AddKeysActivity extends ScreenActivity {

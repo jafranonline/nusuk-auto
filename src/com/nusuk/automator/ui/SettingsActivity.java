@@ -1,10 +1,18 @@
-package com.nusuk.automator;
+package com.nusuk.automator.ui;
 
 import android.content.Intent;
 import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.nusuk.automator.R;
+import com.nusuk.automator.codes.AddKeysActivity;
+import com.nusuk.automator.core.L;
+import com.nusuk.automator.core.Links;
+import com.nusuk.automator.overlay.OverlayService;
+import com.nusuk.automator.quiz.QuizPace;
+import com.nusuk.automator.update.UpdateChecker;
 
 /** App settings: language (English / Bangla), the pace of the quiz automation, adding keys, updates. */
 public class SettingsActivity extends ScreenActivity {

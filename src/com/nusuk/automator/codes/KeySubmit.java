@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.codes;
 
 import android.content.Context;
 
@@ -19,6 +19,9 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.Access;
 
 /**
  * Users adding their own keys. {@link #parse} pulls keys out of any pasted text (no special format),

@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.stats;
 
 import android.view.Gravity;
 import android.widget.LinearLayout;
@@ -8,6 +8,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import com.nusuk.automator.R;
+import com.nusuk.automator.codes.KeyRepository;
+import com.nusuk.automator.core.L;
+import com.nusuk.automator.ui.ScreenActivity;
 
 /** Today's numbers, all-time totals, and a date-wise breakdown of codes added and quiz questions solved. */
 public class StatsActivity extends ScreenActivity {

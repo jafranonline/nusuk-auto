@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.ui;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -15,6 +15,22 @@ import android.widget.TextView;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.widget.Toast;
+
+import com.nusuk.automator.R;
+import com.nusuk.automator.automation.AutomationService;
+import com.nusuk.automator.codes.AddKeysActivity;
+import com.nusuk.automator.codes.CodeDownloader;
+import com.nusuk.automator.codes.KeyRepository;
+import com.nusuk.automator.core.L;
+import com.nusuk.automator.core.Links;
+import com.nusuk.automator.notices.Notices;
+import com.nusuk.automator.notices.NotificationsActivity;
+import com.nusuk.automator.overlay.OverlayService;
+import com.nusuk.automator.quiz.QuizSolver;
+import com.nusuk.automator.quiz.QuizSync;
+import com.nusuk.automator.stats.Stats;
+import com.nusuk.automator.stats.StatsActivity;
+import com.nusuk.automator.update.UpdateChecker;
 
 public class MainActivity extends Activity implements KeyRepository.ChangeListener {
 
@@ -50,7 +66,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         rowNusuk = findViewById(R.id.rowNusuk);
         runningBanner = findViewById(R.id.runningBanner);
         findViewById(R.id.btnStopRun).setOnClickListener(v -> {
-            NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+            AutomationService s = AutomationService.getInstance();
             if (s != null) s.stopAutomation("Stopped by user");
             updateRunning();
             Toast.makeText(this, L.t(this, "Stopped"), Toast.LENGTH_SHORT).show();
@@ -271,12 +287,12 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     }
 
     private void updateRunning() {
-        NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+        AutomationService s = AutomationService.getInstance();
         boolean running = s != null && s.isRunning();
         runningBanner.setVisibility(running ? View.VISIBLE : View.GONE);
         if (running) {
             ((TextView) findViewById(R.id.tvRunningTitle)).setText(
-                    L.t(this, s.getCurrentMode() == NusukAccessibilityService.AutomationMode.QUIZ ? "Playing quiz" : "Adding codes"));
+                    L.t(this, s.getCurrentMode() == AutomationService.AutomationMode.QUIZ ? "Playing quiz" : "Adding codes"));
         }
     }
 
@@ -301,7 +317,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
             openNusukStore();
             return;
         }
-        if (!NusukAccessibilityService.isServiceRunning()) {
+        if (!AutomationService.isServiceRunning()) {
             Toast.makeText(this, isAccessibilitySwitchedOn()
                     ? L.t(this, "Android stopped Nusuk Auto. In Accessibility, turn it off and on again.")
                     : L.t(this, "Enable the accessibility service first"), Toast.LENGTH_LONG).show();
@@ -342,7 +358,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     private void checkPermissions() {
         // The Settings switch can stay on while Android has stopped the service (after a crash,
         // an app update, or a battery saver killing it): only a connected service counts.
-        boolean accOk = NusukAccessibilityService.isServiceRunning();
+        boolean accOk = AutomationService.isServiceRunning();
         boolean accStale = !accOk && isAccessibilitySwitchedOn();
         tvAccessibilityLabel.setText(L.t(this, accStale ? "Accessibility stopped: turn it off and on" : "Accessibility service"));
         btnEnableAccessibility.setText(L.t(this, accStale ? "Fix" : "Enable"));

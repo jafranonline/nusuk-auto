@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.overlay;
 
 import android.app.Service;
 import android.content.Intent;
@@ -12,13 +12,19 @@ import android.util.Log;
 import android.view.*;
 import android.widget.*;
 
-public class OverlayService extends Service implements NusukAccessibilityService.AutomationListener, KeyRepository.ChangeListener {
+import com.nusuk.automator.R;
+import com.nusuk.automator.automation.AutomationService;
+import com.nusuk.automator.codes.KeyRepository;
+import com.nusuk.automator.core.L;
+import com.nusuk.automator.quiz.QuizPace;
+
+public class OverlayService extends Service implements AutomationService.AutomationListener, KeyRepository.ChangeListener {
     private static final String TAG = "OverlayService";
     private static OverlayService instance;
     private static volatile boolean appOpen = false;
 
     /** Nusuk Auto's own screens are on top: the floating widget hides there and comes back when they leave. */
-    static void setAppOpen(boolean open) {
+    public static void setAppOpen(boolean open) {
         appOpen = open;
         OverlayService s = instance;
         if (s != null) s.mainHandler.post(s::applyHidden);
@@ -62,7 +68,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
     private boolean moveQueued = false;
     private static final int DEFAULT_BATCH = 100, MAX_BATCH = 9999, STEP = 10;
 
-    private NusukAccessibilityService.AutomationMode selectedMode = NusukAccessibilityService.AutomationMode.CODES;
+    private AutomationService.AutomationMode selectedMode = AutomationService.AutomationMode.CODES;
     private int selectedBatchCount = DEFAULT_BATCH;
     private float initialX, initialY;
     private int initialTouchX, initialTouchY;
@@ -84,7 +90,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
             // Reading windows can block for seconds when Nusuk is busy: never on the UI thread.
             // The next check is scheduled only after this one is done, so checks never pile up.
             new Thread(() -> {
-                NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+                AutomationService s = AutomationService.getInstance();
                 boolean front = s != null && s.isNusukInFront();
                 boolean running = s != null && s.isRunning();
                 mainHandler.post(() -> {
@@ -111,7 +117,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
     }
 
     public void ensureServiceListener() {
-        NusukAccessibilityService service = NusukAccessibilityService.getInstance();
+        AutomationService service = AutomationService.getInstance();
         if (service != null) {
             service.registerListener(this);
         }
@@ -132,25 +138,25 @@ public class OverlayService extends Service implements NusukAccessibilityService
 
                 String modeStr = intent.getStringExtra("mode");
                 if ("QUIZ".equalsIgnoreCase(modeStr)) {
-                    selectMode(NusukAccessibilityService.AutomationMode.QUIZ);
+                    selectMode(AutomationService.AutomationMode.QUIZ);
                 } else if ("CODES".equalsIgnoreCase(modeStr)) {
-                    selectMode(NusukAccessibilityService.AutomationMode.CODES);
+                    selectMode(AutomationService.AutomationMode.CODES);
                 }
 
-                NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+                AutomationService s = AutomationService.getInstance();
                 if (s != null) {
                     s.registerListener(this);
                     s.startAutomation(count, selectedMode);
                 }
             } else if ("SET_MODE".equals(action)) {
                 if ("QUIZ".equalsIgnoreCase(intent.getStringExtra("mode"))) {
-                    selectMode(NusukAccessibilityService.AutomationMode.QUIZ);
+                    selectMode(AutomationService.AutomationMode.QUIZ);
                 } else {
-                    selectMode(NusukAccessibilityService.AutomationMode.CODES);
+                    selectMode(AutomationService.AutomationMode.CODES);
                 }
                 expand();
             } else if ("PAUSE".equals(action)) {
-                NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+                AutomationService s = AutomationService.getInstance();
                 if (s != null) {
                     s.pauseAutomation();
                 }
@@ -167,7 +173,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
         mainHandler.removeCallbacks(awayCheck);
         instance = null;
         KeyRepository.getInstance(this).unregisterListener(this);
-        NusukAccessibilityService service = NusukAccessibilityService.getInstance();
+        AutomationService service = AutomationService.getInstance();
         if (service != null) {
             service.unregisterListener(this);
         }
@@ -228,7 +234,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
         rowCount = overlayView.findViewById(R.id.rowCount);
         btnPause = overlayView.findViewById(R.id.btnPause);
         btnPause.setOnClickListener(v -> {
-            NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+            AutomationService s = AutomationService.getInstance();
             if (s != null && s.isRunning()) s.pauseAutomation(); // toggles; the label follows onProgress
         });
         btnPace = overlayView.findViewById(R.id.btnPace);
@@ -238,8 +244,8 @@ public class OverlayService extends Service implements NusukAccessibilityService
         });
         renderPace();
 
-        btnModeCodes.setOnClickListener(v -> selectMode(NusukAccessibilityService.AutomationMode.CODES));
-        btnModeQuiz.setOnClickListener(v -> selectMode(NusukAccessibilityService.AutomationMode.QUIZ));
+        btnModeCodes.setOnClickListener(v -> selectMode(AutomationService.AutomationMode.CODES));
+        btnModeQuiz.setOnClickListener(v -> selectMode(AutomationService.AutomationMode.QUIZ));
 
         btnCountMinus.setOnClickListener(v -> { commitCountInput(); selectBatch(selectedBatchCount - STEP); });
         btnCountPlus.setOnClickListener(v -> { commitCountInput(); selectBatch(selectedBatchCount + STEP); });
@@ -269,7 +275,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
         btnAction.setOnClickListener(v -> {
             commitCountInput();
             ensureServiceListener();
-            NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+            AutomationService s = AutomationService.getInstance();
             if (s == null) {
                 // Usually the switch is still on but Android stopped the service: turning it off
                 // and on reconnects it. Open the screen so it's one step away.
@@ -336,7 +342,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
 
         windowManager.addView(overlayView, params);
         applyHidden();
-        selectMode(NusukAccessibilityService.AutomationMode.QUIZ); // Default to Quiz since it's the active focus
+        selectMode(AutomationService.AutomationMode.QUIZ); // Default to Quiz since it's the active focus
         selectBatch(DEFAULT_BATCH);
         updateUiStats();
     }
@@ -377,7 +383,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
         int setup = running ? View.GONE : View.VISIBLE;
         if (rowMode != null) rowMode.setVisibility(setup);
         if (rowCount != null) rowCount.setVisibility(setup);
-        if (rowPace != null) rowPace.setVisibility(running || selectedMode != NusukAccessibilityService.AutomationMode.QUIZ ? View.GONE : View.VISIBLE);
+        if (rowPace != null) rowPace.setVisibility(running || selectedMode != AutomationService.AutomationMode.QUIZ ? View.GONE : View.VISIBLE);
         if (btnPause != null) btnPause.setVisibility(running ? View.VISIBLE : View.GONE);
         if (btnClose != null) btnClose.setVisibility(running ? View.GONE : View.VISIBLE); // only minimize while running
     }
@@ -385,14 +391,14 @@ public class OverlayService extends Service implements NusukAccessibilityService
     private void setActionIdle() {
         setRunningUi(false);
         if (btnAction == null) return;
-        btnAction.setText(L.t(this, selectedMode == NusukAccessibilityService.AutomationMode.QUIZ ? "▶  Start quiz" : "▶  Start codes"));
+        btnAction.setText(L.t(this, selectedMode == AutomationService.AutomationMode.QUIZ ? "▶  Start quiz" : "▶  Start codes"));
         btnAction.setBackgroundResource(R.drawable.ov_start_btn);
         btnAction.setTextColor(0xFF1E3A5C);
     }
 
     private void setActionRunning(int done, int target) {
         setRunningUi(true);
-        NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+        AutomationService s = AutomationService.getInstance();
         if (btnPause != null) btnPause.setText(L.t(this, s != null && s.isPaused() ? "▶  Resume" : "❚❚  Pause"));
         if (btnAction == null) return;
         btnAction.setText(L.t(this, "■  Stop"));
@@ -400,9 +406,9 @@ public class OverlayService extends Service implements NusukAccessibilityService
         btnAction.setTextColor(0xFFFFFFFF);
     }
 
-    private void selectMode(NusukAccessibilityService.AutomationMode mode) {
+    private void selectMode(AutomationService.AutomationMode mode) {
         selectedMode = mode;
-        boolean isCodes = (mode == NusukAccessibilityService.AutomationMode.CODES);
+        boolean isCodes = (mode == AutomationService.AutomationMode.CODES);
         if (btnModeCodes != null) {
             btnModeCodes.setBackgroundResource(isCodes ? R.drawable.chip_selected : R.drawable.chip_unselected);
             btnModeCodes.setTextColor(isCodes ? 0xFFFFFFFF : 0xFFAFC4DA);
@@ -433,7 +439,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
             updatingCount = false;
         }
 
-        NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+        AutomationService s = AutomationService.getInstance();
         if (s == null || !s.isRunning()) {
             if (tvProgress != null) tvProgress.setText(L.t(this, "0 / " + selectedBatchCount));
             if (tvBadgeCount != null) tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
@@ -496,9 +502,9 @@ public class OverlayService extends Service implements NusukAccessibilityService
     private void updateUiStats() {
         mainHandler.post(() -> {
             KeyRepository repo = KeyRepository.getInstance(this);
-            NusukAccessibilityService s = NusukAccessibilityService.getInstance();
+            AutomationService s = AutomationService.getInstance();
 
-            if (selectedMode == NusukAccessibilityService.AutomationMode.QUIZ) {
+            if (selectedMode == AutomationService.AutomationMode.QUIZ) {
                 if (tvSubStats != null && (s == null || !s.isRunning())) {
                     tvSubStats.setText(L.t(this, "✓ 0   ✗ 0"));
                 }
@@ -549,7 +555,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
     /** Counts down the "thinking" wait: whole seconds in the status line + a bar along the bottom that empties. */
     private final Runnable thinkTick = new Runnable() {
         @Override public void run() {
-            long left = NusukAccessibilityService.thinkDeadline - System.currentTimeMillis();
+            long left = AutomationService.thinkDeadline - System.currentTimeMillis();
             if (left <= 0 || tvOverlayStatus == null) {
                 if (thinkBar != null) thinkBar.setVisibility(View.GONE);
                 return;
@@ -564,7 +570,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
                 tvOverlayStatus.setText(sb);
             }
             if (thinkBar != null) {
-                long total = Math.max(1, NusukAccessibilityService.thinkTotalMs);
+                long total = Math.max(1, AutomationService.thinkTotalMs);
                 thinkBar.setVisibility(View.VISIBLE);
                 thinkBar.setPivotX(0);
                 thinkBar.setScaleX(Math.min(1f, left / (float) total));
@@ -592,7 +598,7 @@ public class OverlayService extends Service implements NusukAccessibilityService
 
     @Override
     public void onKeysChanged() {
-        if (selectedMode == NusukAccessibilityService.AutomationMode.CODES) {
+        if (selectedMode == AutomationService.AutomationMode.CODES) {
             updateUiStats();
         }
     }

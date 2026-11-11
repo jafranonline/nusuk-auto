@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.core;
 
 import android.content.Context;
 import android.content.SharedPreferences;

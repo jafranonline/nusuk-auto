@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.update;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -25,6 +25,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
+
+import com.nusuk.automator.core.L;
 
 /**
  * Updates the app from inside the app: downloads the new APK (HTTPS), checks it is this app at a

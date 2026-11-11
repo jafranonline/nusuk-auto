@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.quiz;
 
 import android.content.Context;
 import android.os.Handler;
@@ -24,13 +24,13 @@ import java.util.concurrent.Executors;
  * stop, and before every answer while the phone is close to its limit (the server decides the
  * limit; the app never counts on its own). A refusal stops the run.
  */
-final class QuizBatch {
+public final class QuizBatch {
     private static final String TAG = "QuizBatch";
     private static final int BATCH_SIZE = 100;
     /** Flush before each answer while this few (or fewer) questions are left, or `left` is unknown. */
     private static final int NEAR_LIMIT = 3;
 
-    interface DeniedListener {
+    public interface DeniedListener {
         void onDenied(String code, String message);
     }
 
@@ -47,7 +47,7 @@ final class QuizBatch {
     private QuizBatch() {}
 
     /** A new run: the server's count is unknown until the first reply. */
-    static synchronized void reset() {
+    public static synchronized void reset() {
         left = -2;
     }
 
@@ -58,7 +58,7 @@ final class QuizBatch {
     }
 
     /** One question answered from the phone's store. */
-    static void answeredLocally(Context ctx, DeniedListener l) {
+    public static void answeredLocally(Context ctx, DeniedListener l) {
         synchronized (QuizBatch.class) {
             pendingAnswered++;
         }
@@ -66,7 +66,7 @@ final class QuizBatch {
     }
 
     /** Nusuk's verdict on an answer the app gave (skip blind guesses: they say nothing about a cached answer). */
-    static void result(Context ctx, String question, List<String> options, String answer, boolean right, DeniedListener l) {
+    public static void result(Context ctx, String question, List<String> options, String answer, boolean right, DeniedListener l) {
         if (question == null || answer == null || options == null || options.size() < 2) return;
         try {
             JSONObject r = new JSONObject();
@@ -82,7 +82,7 @@ final class QuizBatch {
     }
 
     /** Send whatever is pending (end of a run). */
-    static void flush(Context ctx, DeniedListener l) {
+    public static void flush(Context ctx, DeniedListener l) {
         maybeFlush(ctx, l, true);
     }
 

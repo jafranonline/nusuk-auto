@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.ui;
 
 import android.view.Gravity;
 import android.view.View;
@@ -6,6 +6,9 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.nusuk.automator.R;
+import com.nusuk.automator.core.Links;
 
 /** About the developer: who built the app, where to find them, and what the app is. */
 public class DeveloperActivity extends ScreenActivity {

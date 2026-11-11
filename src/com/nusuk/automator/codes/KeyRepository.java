@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.codes;
 
 import android.content.Context;
 import android.util.AtomicFile;
@@ -12,6 +12,8 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import com.nusuk.automator.stats.Stats;
 
 public class KeyRepository {
     private static final String TAG = "KeyRepo";
@@ -457,7 +459,7 @@ public class KeyRepository {
     // ---- server backup (used by CodeSync, on its own thread) ----
 
     /** Before the first restore on this install, everything already tested goes up too. */
-    synchronized boolean needsRestore() {
+    public synchronized boolean needsRestore() {
         return !restored;
     }
 

@@ -1,4 +1,4 @@
-package com.nusuk.automator;
+package com.nusuk.automator.update;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -21,6 +21,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.nusuk.automator.core.L;
+
 /**
  * New-version check. publish.sh uploads version.json next to the APK:
  *   {"versionCode":6, "versionName":"1.2", "minVersionCode":0, "url":"...", "notes":"..."}
@@ -29,7 +31,7 @@ import java.util.concurrent.Executors;
  * "Update" downloads and installs the new APK inside the app (ApkInstaller); if that is not possible
  * the user can still get it from the website.
  */
-final class UpdateChecker {
+public final class UpdateChecker {
     private static final String TAG = "UpdateChecker";
     static final String VERSION_URL = "https://files-nusuk.minbars.net/version.json";
     private static final String DEFAULT_URL = "https://nusuk.minbars.net/download";
@@ -41,12 +43,13 @@ final class UpdateChecker {
     private static final Handler main = new Handler(Looper.getMainLooper());
 
     /** What the server says, or null when unknown. */
-    static final class Info {
+    public static final class Info {
         int versionCode, minVersionCode;
-        String versionName, url, notes, sha256;
+        public String versionName;
+        String url, notes, sha256;
     }
 
-    interface Listener {
+    public interface Listener {
         /** Called on the main thread with the newer version, or null when up to date. */
         void onChecked(Info newer);
     }
@@ -66,7 +69,7 @@ final class UpdateChecker {
     }
 
     /** On app open: checks at most every 6h, shows the dialog unless snoozed (never for a forced update). */
-    static void autoCheck(Activity a, Listener badge) {
+    public static void autoCheck(Activity a, Listener badge) {
         SharedPreferences p = prefs(a);
         long now = System.currentTimeMillis();
         Info cached = readCached(a);
@@ -84,7 +87,7 @@ final class UpdateChecker {
     }
 
     /** User tapped the version badge: check now and always say the result. */
-    static void manualCheck(Activity a, Listener badge) {
+    public static void manualCheck(Activity a, Listener badge) {
         Toast.makeText(a, L.t(a, "Checking for updates..."), Toast.LENGTH_SHORT).show();
         fetch(a, info -> {
             if (badge != null) badge.onChecked(info);
