@@ -58,6 +58,37 @@ On Android 13 and newer, an app installed from an APK file has its Accessibility
 out at first. Open **Settings > Apps > Nusuk Auto > three dots (top right) > Allow restricted
 settings**, then turn on Nusuk Auto in Accessibility.
 
+## How it is built and released
+
+The build and release scripts are kept outside this repository. This is what they do.
+
+**Build.** There is no Gradle. The Android SDK tools are called directly:
+
+1. `aapt2` compiles `res/`, links it with `AndroidManifest.xml` and generates `R.java`
+   (min SDK 26, target SDK 35).
+2. `javac` (Java 17) compiles `src/` and `R.java` against `android.jar`.
+3. `d8` turns the classes into `classes.dex`, which is added to the APK.
+4. `zipalign`, then `apksigner` signs the APK with the release key.
+5. The certificate fingerprint is checked. A build signed with any other key is rejected.
+
+The app has no third-party libraries, so there is nothing else to download or link.
+
+**Signing key.** Every release is signed with the same key. Android refuses an update signed
+with a different one, and users would have to uninstall and lose their saved progress. The key
+and its password are kept offline and are not in any repository.
+
+**Release.**
+
+1. `android:versionCode` (plus 1) and `android:versionName` are raised in `AndroidManifest.xml`.
+2. The APK is built and its SHA-256 is calculated.
+3. The APK is uploaded to file storage twice: under a fixed name (what the website's download
+   link serves) and under a name with its version code (kept for rollback).
+4. `version.json` is uploaded last, so the app never announces a file that is not there yet:
+   `{"versionCode", "versionName", "minVersionCode", "url", "notes", "sha256"}`.
+5. Phones read `version.json` (`UpdateChecker.java`), offer the update, download the APK, check
+   its SHA-256 and hand it to Android's installer (`ApkInstaller.java`). A phone below
+   `minVersionCode` gets an update dialog it cannot dismiss.
+
 ## Project layout
 
 ```
