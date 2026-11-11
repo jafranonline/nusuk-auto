@@ -339,6 +339,10 @@ public final class L {
         x("Android stopped Nusuk Auto. In Accessibility, turn it off and on again.", "অ্যান্ড্রয়েড Nusuk Auto বন্ধ করে দিয়েছে। অ্যাক্সেসিবিলিটিতে গিয়ে অফ করে আবার অন করো।");
         x("Enable the accessibility service first", "আগে অ্যাক্সেসিবিলিটি সার্ভিস অন করো");
         x("Allow the floating overlay first", "আগে ফ্লোটিং ওভারলে অ্যালাউ করো");
+        x("Can't turn it on?", "অন করতে পারছ না?");
+        x("If the Nusuk Auto switch is greyed out or shows \"Restricted setting\":\n\n1. Tap \"Open App info\"\n2. Tap the 3 dots (top right)\n3. Tap \"Allow restricted settings\"\n4. Come back and turn on Nusuk Auto in Accessibility", "Nusuk Auto-র সুইচ ধূসর হয়ে থাকলে বা \"Restricted setting\" দেখালে:\n\n১. \"Open App info\"-তে ট্যাপ করো\n২. ওপরে ডানে ৩ ডটে ট্যাপ করো\n৩. \"Allow restricted settings\"-এ ট্যাপ করো\n৪. ফিরে এসে অ্যাক্সেসিবিলিটিতে Nusuk Auto অন করো");
+        x("Open App info", "অ্যাপ ইনফো খোলো");
+        x("Open Accessibility", "অ্যাক্সেসিবিলিটি খোলো");
         x("Nusuk Auto isn't connected. In Accessibility, turn Nusuk Auto off and on again.", "Nusuk Auto কানেক্টেড নেই। অ্যাক্সেসিবিলিটিতে গিয়ে Nusuk Auto অফ করে আবার অন করো।");
         x("Play Quiz", "কুইজ খেলো");
         r("Daily limit resets every day at (.+?) \\(your time\\)", "লিমিট রোজ $1-এ রিসেট (তোমার সময়)");

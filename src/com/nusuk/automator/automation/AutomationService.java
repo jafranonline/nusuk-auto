@@ -101,6 +101,10 @@ public class AutomationService extends AccessibilityService {
     // Let the "add code" screen settle after closing the Congratulations dialog,
     // otherwise the first Check tap can be swallowed by the transition.
     private static final long COLLECT_SETTLE_MS = 600;
+    // "Add another code" is pressed once; while the page closes it is only watched, not pressed again.
+    private static final long COLLECT_RETAP_MS = 900;
+    // How often the screen is read while Nusuk is answering a code.
+    private static final long RESULT_POLL_MS = 100;
     private static final int MAX_CLEAR_WAITS = 6;  // x150ms
 
     // Quiz mode state
@@ -652,6 +656,9 @@ public class AutomationService extends AccessibilityService {
 
     private static final long CACHE_MAX_AGE_MS = 1000;
     private long lastCacheClear = 0;
+    // Set before a read that must show the screen as it is NOW (a code's result, a page closing):
+    // a cached read can miss the Congratulations page for up to CACHE_MAX_AGE_MS.
+    private boolean freshRead = false;
 
     private Screen snapshot() {
         updateScreenSize();
@@ -660,10 +667,11 @@ public class AutomationService extends AccessibilityService {
         // those: it can go stale (a Congratulations page long gone kept being "seen" for a minute).
         // Drop it at most once a second: what we act on is never older than that, while most
         // reads stay cheap cache hits (a full re-read costs Nusuk's UI thread ~5x more).
-        if (Build.VERSION.SDK_INT >= 33 && t0 - lastCacheClear > CACHE_MAX_AGE_MS) {
+        if (Build.VERSION.SDK_INT >= 33 && (freshRead || t0 - lastCacheClear > CACHE_MAX_AGE_MS)) {
             clearCache();
             lastCacheClear = t0;
         }
+        freshRead = false;
         Screen s = new Screen(getNusukRoots());
         long ms = android.os.SystemClock.uptimeMillis() - t0;
         if (ms > 300) Log.w(TAG, "Slow screen read: " + s.items.size() + " nodes in " + ms + "ms");
@@ -1046,10 +1054,14 @@ public class AutomationService extends AccessibilityService {
         try {
             KeyRepository repo = KeyRepository.getInstance(this);
 
+            // A code's result (or the Congratulations page closing) is short-lived and must be
+            // seen the moment it happens: read the real screen, not the node cache.
+            boolean awaiting = checkSubmitted || System.currentTimeMillis() - lastCollectTime < COLLECT_RETAP_MS;
+            freshRead = awaiting;
             Screen screen = snapshot();
             if (screen.isEmpty()) {
                 if (DEBUG) Log.d(TAG, "Waiting for Nusuk window...");
-                scheduleNextStep(500);
+                scheduleNextStep(awaiting ? RESULT_POLL_MS : 500);
                 return;
             }
             if (stoppedForArabic(screen)) return;
@@ -1061,11 +1073,19 @@ public class AutomationService extends AccessibilityService {
                 if (currentCode != null) {
                     repo.markSuccess(currentCode);
                     batchProcessed++;
-                    Log.i(TAG, "✓ Success: " + currentCode + " (" + batchProcessed + "/" + targetBatchCount + ")");
+                    Log.i(TAG, "✓ Success: " + currentCode + " (" + batchProcessed + "/" + targetBatchCount + ") seen "
+                            + (System.currentTimeMillis() - checkSubmittedTime) + "ms after submit");
                     notifyProgress("✓ Success: " + currentCode);
                     currentCode = null;
                     checkSubmitted = false;
                     codeAttempts = 0;
+                }
+
+                // Already pressed and the page is still closing: a second press would only restart
+                // the settle wait below (or land on the page underneath).
+                if (System.currentTimeMillis() - lastCollectTime < COLLECT_RETAP_MS) {
+                    scheduleNextStep(RESULT_POLL_MS);
+                    return;
                 }
 
                 boolean done = targetBatchCount > 0 && batchProcessed >= targetBatchCount;
@@ -1079,7 +1099,7 @@ public class AutomationService extends AccessibilityService {
                     return;
                 }
                 lastCollectTime = System.currentTimeMillis();
-                scheduleNextStep(250);
+                scheduleNextStep(RESULT_POLL_MS);
                 return;
             }
 
@@ -1183,7 +1203,7 @@ public class AutomationService extends AccessibilityService {
                     staleErrorAtSubmit = oldError;
                     sawErrorGone = false;
                     notifyProgress("Checking " + currentCode + " (" + (batchProcessed + 1) + "/" + targetBatchCount + ")");
-                    scheduleNextStep(250);
+                    scheduleNextStep(RESULT_POLL_MS);
                     return;
                 }
 
@@ -1238,7 +1258,7 @@ public class AutomationService extends AccessibilityService {
                 }
 
                 // Network request still in-flight
-                scheduleNextStep(200);
+                scheduleNextStep(RESULT_POLL_MS);
                 return;
             }
 

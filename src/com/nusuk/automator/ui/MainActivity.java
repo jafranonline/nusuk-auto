@@ -385,6 +385,29 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     }
 
     private void openAccessibilitySettings() {
+        // Android 13+ greys out the accessibility switch of an app installed from an APK file
+        // ("Restricted setting") until the user allows it in App info. Explain it first.
+        if (Build.VERSION.SDK_INT >= 33 && !isAccessibilitySwitchedOn()) {
+            new AlertDialog.Builder(this)
+                    .setTitle(L.t(this, "Can't turn it on?"))
+                    .setMessage(L.t(this, "If the Nusuk Auto switch is greyed out or shows \"Restricted setting\":\n\n"
+                            + "1. Tap \"Open App info\"\n"
+                            + "2. Tap the 3 dots (top right)\n"
+                            + "3. Tap \"Allow restricted settings\"\n"
+                            + "4. Come back and turn on Nusuk Auto in Accessibility"))
+                    .setPositiveButton(L.t(this, "Open App info"), (d, w) -> {
+                        try {
+                            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.parse("package:" + getPackageName())));
+                        } catch (Exception e) {
+                            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                        }
+                    })
+                    .setNegativeButton(L.t(this, "Open Accessibility"),
+                            (d, w) -> startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)))
+                    .show();
+            return;
+        }
         startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
     }
 
