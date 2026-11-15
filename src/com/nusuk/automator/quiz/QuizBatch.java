@@ -10,6 +10,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -23,6 +24,9 @@ import java.util.concurrent.Executors;
  * Sent every BATCH_SIZE items, after a wrong result (so a bad shared answer is retired fast), on
  * stop, and before every answer while the phone is close to its limit (the server decides the
  * limit; the app never counts on its own). A refusal stops the run.
+ *
+ * Every batch has an id. A batch that got no reply is sent again unchanged under the same id, so
+ * the server never counts it twice.
  */
 public final class QuizBatch {
     private static final String TAG = "QuizBatch";
@@ -43,6 +47,16 @@ public final class QuizBatch {
     private static int left = -2;
     private static boolean sending = false;
     private static final int MAX_PENDING = 500;
+    /** Most the server takes in one call. */
+    private static final int MAX_ANSWERED = 100, MAX_RESULTS = 50;
+    /** Wait this long before sending a failed batch again (a stop sends it right away). */
+    private static final long RETRY_GAP_MS = 15_000;
+
+    /** A batch the server did not answer (timeout, no network): sent again unchanged, under the same id. */
+    private static String failedId;
+    private static int failedAnswered;
+    private static List<JSONObject> failedResults;
+    private static long failedAt;
 
     private QuizBatch() {}
 
@@ -90,22 +104,36 @@ public final class QuizBatch {
         final Context app = ctx.getApplicationContext();
         final int n;
         final List<JSONObject> res;
+        final String id;
         synchronized (QuizBatch.class) {
             if (sending) return; // the running send picks up the rest afterwards
-            boolean near = left == -2 || (left >= 0 && left - pendingAnswered <= NEAR_LIMIT);
-            boolean full = pendingAnswered + pendingResults.size() >= BATCH_SIZE;
-            if (pendingAnswered == 0 && pendingResults.isEmpty()) return;
-            if (!force && !full && !(near && pendingAnswered > 0)) return;
-            n = pendingAnswered;
-            res = new ArrayList<>(pendingResults);
-            pendingAnswered = 0;
-            pendingResults.clear();
+            if (failedId != null) {
+                // Send the unanswered batch again exactly as it was, under the same id: if the server
+                // did count it (only the reply was lost), it won't count it twice.
+                if (!force && System.currentTimeMillis() - failedAt < RETRY_GAP_MS) return;
+                n = failedAnswered;
+                res = failedResults;
+                id = failedId;
+            } else {
+                boolean near = left == -2 || (left >= 0 && left - pendingAnswered <= NEAR_LIMIT);
+                boolean full = pendingAnswered + pendingResults.size() >= BATCH_SIZE;
+                if (pendingAnswered == 0 && pendingResults.isEmpty()) return;
+                if (!force && !full && !(near && pendingAnswered > 0)) return;
+                // No more than the server takes in one call; the rest goes in the next one.
+                n = Math.min(pendingAnswered, MAX_ANSWERED);
+                List<JSONObject> head = pendingResults.subList(0, Math.min(pendingResults.size(), MAX_RESULTS));
+                res = new ArrayList<>(head);
+                head.clear();
+                pendingAnswered -= n;
+                id = UUID.randomUUID().toString();
+            }
             sending = true;
         }
         exec.execute(() -> {
             boolean ok = false, more;
             try {
                 JSONObject p = new JSONObject();
+                p.put("id", id);
                 p.put("answered", n);
                 p.put("results", new JSONArray(res));
                 QuizSolver.Result r = QuizSolver.post(app, "/api/quiz/batch", p, 8000);
@@ -128,15 +156,22 @@ public final class QuizBatch {
                 Log.w(TAG, "Batch failed, kept for the next send: " + e);
             }
             synchronized (QuizBatch.class) {
-                if (!ok) { // put it back so nothing is lost (capped, so a long outage can't grow without limit)
-                    pendingAnswered += n;
-                    pendingResults.addAll(0, res);
+                if (ok) {
+                    failedId = null;
+                    failedResults = null;
+                    failedAnswered = 0;
+                } else { // keep it as it is so nothing is lost and nothing is counted twice
+                    failedId = id;
+                    failedResults = res;
+                    failedAnswered = n;
+                    failedAt = System.currentTimeMillis();
+                    // A long outage can't grow the waiting list without limit.
                     while (pendingResults.size() > MAX_PENDING) pendingResults.remove(0);
                 }
                 sending = false;
                 more = ok && (pendingAnswered > 0 || !pendingResults.isEmpty());
             }
-            if (more) maybeFlush(app, l, false);
+            if (more) maybeFlush(app, l, force); // a stop sends everything that is left
         });
     }
 }

@@ -66,7 +66,7 @@ public class OverlayService extends Service implements AutomationService.Automat
     private View btnPace;
     private boolean updatingCount = false;
     private boolean moveQueued = false;
-    private static final int DEFAULT_BATCH = 100, MAX_BATCH = 9999, STEP = 10;
+    private static final int DEFAULT_BATCH = 300, MIN_BATCH = 1, MAX_BATCH = 8000, STEP = 10;
 
     private AutomationService.AutomationMode selectedMode = AutomationService.AutomationMode.CODES;
     private int selectedBatchCount = DEFAULT_BATCH;
@@ -78,40 +78,11 @@ public class OverlayService extends Service implements AutomationService.Automat
         return null;
     }
 
-    // The widget lives only on top of Nusuk: it closes once the user has been in another app for
-    // AWAY_IDLE_MS (a bit longer mid-run, since Nusuk can hop to a login app and back). Our own
-    // screens don't count as "away"; Nusuk gets START_GRACE_MS to open after the widget starts.
-    private static final long AWAY_IDLE_MS = 4_000, AWAY_RUNNING_MS = 30_000, START_GRACE_MS = 15_000;
-    private static final long FRONT_POLL_MS = 1_000;
-    private long lastNusukSeen;
-    private volatile boolean destroyed = false;
-    private final Runnable awayCheck = new Runnable() {
-        @Override public void run() {
-            // Reading windows can block for seconds when Nusuk is busy: never on the UI thread.
-            // The next check is scheduled only after this one is done, so checks never pile up.
-            new Thread(() -> {
-                AutomationService s = AutomationService.getInstance();
-                boolean front = s != null && s.isNusukInFront();
-                boolean running = s != null && s.isRunning();
-                mainHandler.post(() -> {
-                    if (destroyed) return;
-                    long now = System.currentTimeMillis();
-                    if (front || appOpen) lastNusukSeen = now;
-                    long limit = running ? AWAY_RUNNING_MS : AWAY_IDLE_MS;
-                    if (now - lastNusukSeen >= limit) { stopSelf(); return; }
-                    mainHandler.postDelayed(awayCheck, FRONT_POLL_MS);
-                });
-            }, "nusuk-away-check").start();
-        }
-    };
-
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
         initOverlayView();
-        lastNusukSeen = System.currentTimeMillis() + START_GRACE_MS - AWAY_IDLE_MS; // Nusuk may take a while to open
-        mainHandler.postDelayed(awayCheck, FRONT_POLL_MS);
         KeyRepository.getInstance(this).registerListener(this);
         ensureServiceListener();
     }
@@ -169,8 +140,6 @@ public class OverlayService extends Service implements AutomationService.Automat
     @Override
     public void onDestroy() {
         super.onDestroy();
-        destroyed = true;
-        mainHandler.removeCallbacks(awayCheck);
         instance = null;
         KeyRepository.getInstance(this).unregisterListener(this);
         AutomationService service = AutomationService.getInstance();
@@ -247,8 +216,8 @@ public class OverlayService extends Service implements AutomationService.Automat
         btnModeCodes.setOnClickListener(v -> selectMode(AutomationService.AutomationMode.CODES));
         btnModeQuiz.setOnClickListener(v -> selectMode(AutomationService.AutomationMode.QUIZ));
 
-        btnCountMinus.setOnClickListener(v -> { commitCountInput(); selectBatch(selectedBatchCount - STEP); });
-        btnCountPlus.setOnClickListener(v -> { commitCountInput(); selectBatch(selectedBatchCount + STEP); });
+        holdToStep(btnCountMinus, -1);
+        holdToStep(btnCountPlus, 1);
 
         // The overlay is not focusable (so it never steals focus from the quiz app). Only while
         // the user types in the count box do we make it focusable so the keyboard can open.
@@ -343,7 +312,7 @@ public class OverlayService extends Service implements AutomationService.Automat
         windowManager.addView(overlayView, params);
         applyHidden();
         selectMode(AutomationService.AutomationMode.QUIZ); // Default to Quiz since it's the active focus
-        selectBatch(DEFAULT_BATCH);
+        selectBatch(savedBatch());
         updateUiStats();
     }
 
@@ -365,15 +334,25 @@ public class OverlayService extends Service implements AutomationService.Automat
         if (etCount == null) return;
         int n = selectedBatchCount;
         try {
+            // Digit-by-digit so Bengali digits, "", "0" and "00" can never throw.
             String t = etCount.getText().toString().trim();
-            if (!t.isEmpty()) n = Integer.parseInt(t);
-        } catch (NumberFormatException ignored) {}
-        selectBatch(n);
-        etCount.clearFocus();
-        android.view.inputmethod.InputMethodManager imm =
-                (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-        if (imm != null) imm.hideSoftInputFromWindow(etCount.getWindowToken(), 0);
-        setWindowFocusable(false);
+            int v = 0, digits = 0;
+            for (int i = 0; i < t.length(); i++) {
+                int d = Character.digit(t.charAt(i), 10);
+                if (d >= 0) { v = v * 10 + d; digits++; }
+            }
+            if (digits > 0) n = v;
+        } catch (Throwable ignored) {}
+        try {
+            selectBatch(n);
+            etCount.clearFocus();
+            android.view.inputmethod.InputMethodManager imm =
+                    (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+            if (imm != null) imm.hideSoftInputFromWindow(etCount.getWindowToken(), 0);
+            setWindowFocusable(false);
+        } catch (Throwable e) {
+            Log.e(TAG, "commitCountInput failed", e);
+        }
     }
 
     /** While a run is going only the status, progress and Pause/Stop show; the setup rows come back after. */
@@ -429,9 +408,43 @@ public class OverlayService extends Service implements AutomationService.Automat
         rowPace.setContentDescription(L.t(this, "Quiz pace: " + L.t(this, on ? "Normal" : "Fast")));
     }
 
+    private int savedBatch() {
+        try { return getSharedPreferences("overlay", MODE_PRIVATE).getInt("batch", DEFAULT_BATCH); }
+        catch (Throwable e) { return DEFAULT_BATCH; }
+    }
+
+    /** Tap = one step; hold = repeats, speeding up (10 → 50 → 200 per tick). */
+    private void holdToStep(View v, int dir) {
+        final Runnable[] tick = new Runnable[1];
+        final int[] n = {0};
+        tick[0] = () -> {
+            n[0]++;
+            int step = n[0] > 30 ? 200 : n[0] > 12 ? 50 : STEP;
+            selectBatch(selectedBatchCount + dir * step);
+            mainHandler.postDelayed(tick[0], n[0] > 12 ? 60 : 120);
+        };
+        v.setOnTouchListener((view, e) -> {
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    commitCountInput();
+                    n[0] = 0;
+                    view.setPressed(true);
+                    tick[0].run();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    mainHandler.removeCallbacks(tick[0]);
+                    view.setPressed(false);
+                    return true;
+            }
+            return true;
+        });
+    }
+
     private void selectBatch(int count) {
-        count = Math.max(1, Math.min(MAX_BATCH, count));
+        count = Math.max(MIN_BATCH, Math.min(MAX_BATCH, count));
         selectedBatchCount = count;
+        try { getSharedPreferences("overlay", MODE_PRIVATE).edit().putInt("batch", count).apply(); } catch (Throwable ignored) {}
         if (etCount != null && !L.t(this, String.valueOf(count)).contentEquals(etCount.getText())) {
             updatingCount = true;
             etCount.setText(L.t(this, String.valueOf(count)));
@@ -587,8 +600,8 @@ public class OverlayService extends Service implements AutomationService.Automat
             if (thinkBar != null) thinkBar.setVisibility(View.GONE);
             if (tvOverlayStatus != null) tvOverlayStatus.setText(L.t(this, reason));
             setActionIdle();
-            // Run finished: the count goes back to the default and the counters start from 0 again.
-            selectBatch(DEFAULT_BATCH);
+            // Run finished: the count goes back to the last one used and the counters start from 0 again.
+            selectBatch(savedBatch());
             if (tvProgress != null) tvProgress.setText(L.t(this, "0 / " + selectedBatchCount));
             if (tvBadgeCount != null) tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
             updateUiStats();

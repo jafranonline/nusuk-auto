@@ -238,7 +238,7 @@
                 android:maxLength="4"
                 android:padding="0dp"
                 android:selectAllOnFocus="true"
-                android:text="100"
+                android:text="300"
                 android:textColor="#FFFFFF"
                 android:textCursorDrawable="@null"
                 android:textSize="17sp" />
