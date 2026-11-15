@@ -582,10 +582,10 @@ public class AutomationService extends AccessibilityService {
             node = n;
             CharSequence t = n.getText(), d = n.getContentDescription(), c = n.getClassName();
             text = t != null ? t.toString().trim() : "";
-            lower = text.toLowerCase();
-            descLower = d != null ? d.toString().trim().toLowerCase() : "";
+            lower = text.toLowerCase(java.util.Locale.ROOT);
+            descLower = d != null ? d.toString().trim().toLowerCase(java.util.Locale.ROOT) : "";
             cls = c != null ? c.toString() : "";
-            editable = n.isEditable() || cls.toLowerCase().contains("edit");
+            editable = n.isEditable() || cls.toLowerCase(java.util.Locale.ROOT).contains("edit");
             clickable = n.isClickable();
             enabled = n.isEnabled();
             n.getBoundsInScreen(bounds);
@@ -614,7 +614,7 @@ public class AutomationService extends AccessibilityService {
 
         /** First node whose TEXT contains `sub` (case-insensitive). */
         Item find(String sub) {
-            String s = sub.toLowerCase();
+            String s = sub.toLowerCase(java.util.Locale.ROOT);
             for (Item it : items) if (it.lower.contains(s)) return it;
             return null;
         }
@@ -623,7 +623,7 @@ public class AutomationService extends AccessibilityService {
 
         /** First node whose text or description equals `label` (case-insensitive). */
         Item exact(String label) {
-            String s = label.toLowerCase();
+            String s = label.toLowerCase(java.util.Locale.ROOT);
             for (Item it : items) if (it.lower.equals(s) || it.descLower.equals(s)) return it;
             return null;
         }
@@ -1374,9 +1374,9 @@ public class AutomationService extends AccessibilityService {
         // 3. Word overlap match
         int bestIdx = 0;
         int maxOverlap = -1;
-        String[] ansWords = cleanAns.toLowerCase().split("\\s+");
+        String[] ansWords = cleanAns.toLowerCase(java.util.Locale.ROOT).split("\\s+");
         for (int i = 0; i < options.size(); i++) {
-            String optLower = normalizeText(options.get(i)).toLowerCase();
+            String optLower = normalizeText(options.get(i)).toLowerCase(java.util.Locale.ROOT);
             int overlap = 0;
             for (String w : ansWords) {
                 if (w.length() > 2 && optLower.contains(w)) overlap++;

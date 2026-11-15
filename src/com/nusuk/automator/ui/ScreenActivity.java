@@ -73,7 +73,7 @@ public abstract class ScreenActivity extends Activity {
 
     /** Small grey section label above a group of cards. */
     protected void label(String s, int top) {
-        TextView t = text(L.t(this, s).toUpperCase(), 13, 0xFF78716C);
+        TextView t = text(L.t(this, s).toUpperCase(java.util.Locale.ROOT), 13, 0xFF78716C);
         t.setLetterSpacing(0.12f);
         t.setPadding(px(4), 0, 0, 0);
         content.addView(t, lp(-2, -2, top));
