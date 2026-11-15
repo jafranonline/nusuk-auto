@@ -249,55 +249,6 @@ public class AutomationService extends AccessibilityService {
         return performGlobalAction(GLOBAL_ACTION_BACK);
     }
 
-    /** True when a Nusuk window is currently on screen (used to auto-close the floating widget). */
-    public boolean isNusukVisible() {
-        try {
-            List<AccessibilityWindowInfo> windows = getWindows();
-            if (windows == null) return true; // can't tell: don't close anything
-            for (AccessibilityWindowInfo w : windows) {
-                AccessibilityNodeInfo r = w.getRoot();
-                if (r == null) {
-                    // Nusuk's window often has no readable root while it is busy or changing page.
-                    // An app window we can't read might be Nusuk: don't treat that as "left".
-                    if (w.getType() == AccessibilityWindowInfo.TYPE_APPLICATION) return true;
-                    continue;
-                }
-                CharSequence pkg = r.getPackageName();
-                if (pkg != null && NUSUK_PKG.contentEquals(pkg)) return true;
-            }
-            return false;
-        } catch (Throwable t) {
-            return true;
-        }
-    }
-
-    /**
-     * True when Nusuk is the app the user is in. Decided by the focused app window (our floating
-     * widget can't take focus, so it never counts); an unreadable focused window is "not Nusuk".
-     * Blocking (IPC per window): call off the UI thread.
-     */
-    public boolean isNusukInFront() {
-        try {
-            List<AccessibilityWindowInfo> windows = getWindows(); // top to bottom
-            if (windows == null) return false;
-            AccessibilityWindowInfo front = null;
-            for (AccessibilityWindowInfo w : windows) {
-                if (w.getType() == AccessibilityWindowInfo.TYPE_APPLICATION && (w.isActive() || w.isFocused())) { front = w; break; }
-            }
-            if (front == null) { // nothing focused (transition): the first readable app window
-                for (AccessibilityWindowInfo w : windows) {
-                    if (w.getType() == AccessibilityWindowInfo.TYPE_APPLICATION && w.getRoot() != null) { front = w; break; }
-                }
-            }
-            if (front == null) return false;
-            AccessibilityNodeInfo r = front.getRoot();
-            CharSequence pkg = r != null ? r.getPackageName() : null;
-            return pkg != null && NUSUK_PKG.contentEquals(pkg);
-        } catch (Throwable t) {
-            return false;
-        }
-    }
-
     public static AutomationService getInstance() {
         return instance;
     }
@@ -443,10 +394,6 @@ public class AutomationService extends AccessibilityService {
         }, LOOP_STUCK_MS);
     }
 
-    public void startAutomation(int count) {
-        startAutomation(count, currentMode);
-    }
-
     public void pauseAutomation() {
         handler.post(safe(this::doPause));
     }
@@ -480,7 +427,6 @@ public class AutomationService extends AccessibilityService {
         Log.i(TAG, "startAutomation: mode=" + currentMode + ", count=" + targetBatchCount);
         this.batchProcessed = 0;
         this.thinkUntil = 0;
-        QuizPace.resetRun();
         this.isRunning = true;
         this.isPaused = false;
 
@@ -575,7 +521,7 @@ public class AutomationService extends AccessibilityService {
         final String lower;     // text, lowercase
         final String descLower; // content description, lowercase
         final String cls;
-        final boolean editable, clickable, enabled;
+        final boolean editable;
         final Rect bounds = new Rect();
 
         Item(AccessibilityNodeInfo n) {
@@ -586,8 +532,6 @@ public class AutomationService extends AccessibilityService {
             descLower = d != null ? d.toString().trim().toLowerCase(java.util.Locale.ROOT) : "";
             cls = c != null ? c.toString() : "";
             editable = n.isEditable() || cls.toLowerCase(java.util.Locale.ROOT).contains("edit");
-            clickable = n.isClickable();
-            enabled = n.isEnabled();
             n.getBoundsInScreen(bounds);
         }
     }
@@ -902,7 +846,7 @@ public class AutomationService extends AccessibilityService {
                     @Override
                     public void onDenied(String code, String message) {
                         if (req != quizReq || !isRunning) return;
-                        handleQuizDenied(code, message);
+                        handleQuizDenied(message);
                     }
 
                     @Override
@@ -1311,14 +1255,11 @@ public class AutomationService extends AccessibilityService {
     public static class QuizQuestionData {
         public String question;
         public List<String> options = new ArrayList<>();
-        public List<Rect> optionBounds = new ArrayList<>();
-        public List<AccessibilityNodeInfo> optionNodes = new ArrayList<>();
-        Item questionItem; // the item read as the question (an option, if it scrolled off the top)
     }
 
     /** A batch send was refused (limit reached, code revoked...): stop like any refusal. */
     private final QuizBatch.DeniedListener batchDenied = (code, message) ->
-            handler.post(safe(() -> { if (isRunning && currentMode == AutomationMode.QUIZ) handleQuizDenied(code, message); }));
+            handler.post(safe(() -> { if (isRunning && currentMode == AutomationMode.QUIZ) handleQuizDenied(message); }));
 
     private QuizQuestionData extractQuizData(Screen screen) {
         int minTop = sy(300); // skip the header bar
@@ -1341,13 +1282,10 @@ public class AutomationService extends AccessibilityService {
 
         QuizQuestionData data = new QuizQuestionData();
         data.question = valid.get(0).text;
-        data.questionItem = valid.get(0);
 
         for (int i = 1; i < valid.size() && i <= 4; i++) {
             Item opt = valid.get(i);
             data.options.add(opt.text);
-            data.optionBounds.add(new Rect(opt.bounds));
-            data.optionNodes.add(opt.node);
         }
 
         return data;
@@ -1809,7 +1747,7 @@ public class AutomationService extends AccessibilityService {
 
     /** No access (limit reached, quiz paused...): stop, never guess. The stop reason is the
      *  server's own message, shown like every other stop. */
-    private void handleQuizDenied(String code, String message) {
+    private void handleQuizDenied(String message) {
         if (currentMode != AutomationMode.QUIZ) return; // quiz limits never touch adding codes
         quizSolvingInProgress = false;
         stopAutomation(message);

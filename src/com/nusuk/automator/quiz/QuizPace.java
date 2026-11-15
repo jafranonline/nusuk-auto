@@ -54,9 +54,6 @@ public final class QuizPace {
         return Math.max(LIMIT_MIN_SEC, Math.min(LIMIT_MAX_SEC, s));
     }
 
-    /** Call when a run starts (kept for callers; nothing is carried between runs any more). */
-    public static void resetRun() {}
-
     /** Wait before tapping the answer: random in the chosen range (Normal only; Fast returns 0). */
     public static long thinkDelayMs(Context c) {
         if (!isOn(c)) return 0;
