@@ -40,11 +40,9 @@ public class KeyRepository {
     private final Set<String> deadCodes = new HashSet<>();
     private long deadSince = 0;       // server cursor for dead-list changes
     private final List<ChangeListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
-    private int currentIndex = 0;     // legacy (codes were once tried in order); kept in saved state
     private final Random picker = new Random();
     private Set<String> codeKeys = null; // upper-case copy of allCodes, for de-duplicating downloads
     private long codesCursor = 0;    // server key id the downloaded list is complete up to
-    private int codesVersion = 0;     // CODES_LIST_VERSION of the saved list (1 = before versioning)
     private int remainingCache = -1;  // untested codes in the current list; -1 = recount
     // Codes that got no answer this session; not persisted, so they are tried again later.
     private final Set<String> deferredCodes = new HashSet<>();
@@ -269,17 +267,6 @@ public class KeyRepository {
         }
     }
 
-    public synchronized void resetStats() {
-        successCodes.clear();
-        invalidCodes.clear();
-        alreadyCodes.clear();
-        deferredCodes.clear();
-        currentIndex = 0;
-        remainingCache = -1;
-        saveState();
-        notifyListeners();
-    }
-
     /** Cursor of the code download (server key id); 0 = nothing downloaded yet. */
     synchronized long codesCursor() {
         return codesCursor;
@@ -323,13 +310,12 @@ public class KeyRepository {
     private void writeState() {
         // Copy under the lock (fast), build the JSON outside it: the UI thread reads the counters
         // under the same lock, and ~20k codes of JSON used to hold it for a visible stall.
-        final int idx, ver;
         final long cursor, dSince;
         final boolean rest;
         final List<String> succ, inv, pSucc, pInv, already, pAlready, dead, prio, rechecked;
         synchronized (this) {
             savePending = false; // changes from here on schedule another write
-            idx = currentIndex; ver = codesVersion; cursor = codesCursor; dSince = deadSince; rest = restored;
+            cursor = codesCursor; dSince = deadSince; rest = restored;
             succ = new ArrayList<>(successCodes);
             inv = new ArrayList<>(invalidCodes);
             pSucc = new ArrayList<>(pendingSuccess);
@@ -343,8 +329,6 @@ public class KeyRepository {
         String data;
         try {
             JSONObject json = new JSONObject();
-            json.put("currentIndex", idx);
-            json.put("codesVersion", ver);
             json.put("codesCursor", cursor);
             json.put("success", new JSONArray(succ));
             json.put("invalid", new JSONArray(inv));
@@ -403,8 +387,6 @@ public class KeyRepository {
         if (raw != null) try {
             JSONObject json = new JSONObject(raw);
 
-            currentIndex = json.optInt("currentIndex", 0);
-            codesVersion = json.optInt("codesVersion", 1); // saved before versioning = list v1
             codesCursor = json.optLong("codesCursor", 0);
 
             JSONArray succArr = json.optJSONArray("success");

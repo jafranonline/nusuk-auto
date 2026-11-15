@@ -246,15 +246,6 @@ public final class QuizStore extends SQLiteOpenHelper {
         });
     }
 
-    /**
-     * The stored answer for this question that is one of `options` (returned as the on-screen
-     * option text), or null. Verified answers win; known-wrong answers are skipped.
-     */
-    public String lookup(String question, List<String> options) {
-        String v = lookup(question, options, true);
-        return v != null ? v : lookup(question, options, false);
-    }
-
     private String lookup(String question, List<String> options, boolean verified) {
         String qn = norm(question);
         if (qn.isEmpty() || options == null || options.isEmpty()) return null;
@@ -318,14 +309,6 @@ public final class QuizStore extends SQLiteOpenHelper {
             v.put("qnorm", qn); v.put("anorm", an); v.put("answer", answer); v.put("updated_at", now);
             db.insertWithOnConflict("wrong", null, v, SQLiteDatabase.CONFLICT_REPLACE);
         });
-    }
-
-    public int count() {
-        try (Cursor c = getReadableDatabase().rawQuery("SELECT COUNT(*) FROM answers", null)) {
-            return c.moveToFirst() ? c.getInt(0) : 0;
-        } catch (Exception e) {
-            return 0;
-        }
     }
 
     private interface Op { void run(SQLiteDatabase db, String qn, String an, long now); }

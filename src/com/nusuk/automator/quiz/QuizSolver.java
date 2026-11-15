@@ -94,10 +94,6 @@ public class QuizSolver {
         return r.status >= 400 && r.body.has("code");
     }
 
-    public static void solveQuiz(Context context, final String question, final List<String> options, final QuizCallback callback) {
-        solveQuiz(context, question, options, null, callback);
-    }
-
     /** `wrong`: options Nusuk already marked wrong for this question; the server's AI avoids them. */
     public static void solveQuiz(Context context, final String question, final List<String> options,
                                  final List<String> wrong, final QuizCallback callback) {
