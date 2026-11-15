@@ -37,7 +37,7 @@ import com.nusuk.automator.core.L;
 final class ApkInstaller {
     private static final String TAG = "ApkInstaller";
     static final String ACTION_RESULT = "com.nusuk.automator.INSTALL_RESULT";
-    private static final String FILE_HOST = "https://files-nusuk.minbars.net/";
+    private static final String FILE_HOST = com.nusuk.automator.core.Links.FILE_HOST;
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static volatile boolean busy = false;
 

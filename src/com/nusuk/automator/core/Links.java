@@ -20,6 +20,13 @@ public final class Links {
 
     private Links() {}
 
+    /** Nusuk's own app (the one we automate). */
+    public static final String NUSUK_PACKAGE = "com.moh.nusukapp";
+    /** Our site and file hosts (the server API base is the api_base string resource). */
+    public static final String SITE_HOST = "nusuk.minbars.net";
+    public static final String SITE_URL = "https://" + SITE_HOST;
+    public static final String FILE_HOST = "https://files-nusuk.minbars.net/";
+
     /** Sites a link sent by the server (announcements, group link, update page) may open. A link to
      *  anywhere else is ignored, so a hijacked server cannot push users to a phishing page. */
     private static final String[] TRUSTED_HOSTS = {

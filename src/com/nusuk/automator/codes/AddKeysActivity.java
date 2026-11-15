@@ -40,7 +40,7 @@ public class AddKeysActivity extends ScreenActivity {
         input.setMinLines(6);
         input.setGravity(Gravity.TOP | Gravity.START);
         input.setTextSize(17);
-        input.setTextColor(0xFF1C1917);
+        input.setTextColor(getColor(R.color.text_primary));
         input.setHint(L.t(this, "NG-xxxxxxxx"));
         input.setHintTextColor(0xFFA8A29E);
         input.setPadding(px(12), px(10), px(12), px(10));
@@ -123,7 +123,7 @@ public class AddKeysActivity extends ScreenActivity {
         if (!r.added.isEmpty()) group("✓  " + r.added.size() + " new code" + (r.added.size() == 1 ? "" : "s") + " added. Thank you!", r.added, 0xFF15803D);
         if (!dup.isEmpty()) group("＝  " + dup.size() + " already in the list", dup, 0xFFB45309);
         if (!bad.isEmpty()) group("✗  " + bad.size() + " not a valid code (NG- and 8 letters or digits)", bad, 0xFFB91C1C);
-        if (r.error == null && r.added.isEmpty() && dup.isEmpty() && bad.isEmpty()) showMessage("Nothing to add.", 0xFF78716C);
+        if (r.error == null && r.added.isEmpty() && dup.isEmpty() && bad.isEmpty()) showMessage("Nothing to add.", getColor(R.color.text_secondary));
         if (r.error == null && !r.added.isEmpty()) input.setText(""); // done: ready for the next paste
     }
 

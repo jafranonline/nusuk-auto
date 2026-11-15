@@ -40,11 +40,11 @@ public class DeveloperActivity extends ScreenActivity {
 
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.addView(text(title, 17, 0xFF1C1917));
+        col.addView(text(title, 17, getColor(R.color.text_primary)));
         TextView s = new TextView(this); // an address, never translated
         s.setText(sub);
         s.setTextSize(15);
-        s.setTextColor(0xFF78716C);
+        s.setTextColor(getColor(R.color.text_secondary));
         col.addView(s, lp(-2, -2, 1));
         LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, -2, 1);
         cp.setMarginStart(px(14));
@@ -82,10 +82,10 @@ public class DeveloperActivity extends ScreenActivity {
         avatar.setClipToOutline(true);
         c.addView(avatar, new LinearLayout.LayoutParams(px(96), px(96)));
 
-        TextView name = text(Links.DEV_NAME, 22, 0xFF1C1917);
+        TextView name = text(Links.DEV_NAME, 22, getColor(R.color.text_primary));
         name.setGravity(Gravity.CENTER);
         c.addView(name, lp(-2, -2, 14));
-        TextView role = text("Developer of Nusuk Auto", 16, 0xFF78716C);
+        TextView role = text("Developer of Nusuk Auto", 16, getColor(R.color.text_secondary));
         role.setGravity(Gravity.CENTER);
         c.addView(role, lp(-2, -2, 3));
 
@@ -107,10 +107,7 @@ public class DeveloperActivity extends ScreenActivity {
         LinearLayout about = card(8);
         about.addView(text("Nusuk Auto is an unofficial helper made for Nusuk users. It is not connected to the Nusuk app or the Ministry of Hajj and Umrah.", 16, 0xFF44403C));
         about.addView(text("Questions, problems or ideas? Open Help for step-by-step fixes, or write in the Facebook group or to the developer.", 16, 0xFF44403C), lp(-1, -2, 10));
-        String v = "";
-        try {
-            v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-        } catch (Exception ignored) {}
-        about.addView(text("Version " + v, 15, 0xFF78716C), lp(-2, -2, 12));
+        String v = com.nusuk.automator.core.AppInfo.versionName(this);
+        about.addView(text("Version " + v, 15, getColor(R.color.text_secondary)), lp(-2, -2, 12));
     }
 }

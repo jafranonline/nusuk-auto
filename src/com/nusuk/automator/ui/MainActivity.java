@@ -21,6 +21,7 @@ import com.nusuk.automator.automation.AutomationService;
 import com.nusuk.automator.codes.AddKeysActivity;
 import com.nusuk.automator.codes.CodeDownloader;
 import com.nusuk.automator.codes.KeyRepository;
+import com.nusuk.automator.core.AppInfo;
 import com.nusuk.automator.core.L;
 import com.nusuk.automator.core.Links;
 import com.nusuk.automator.notices.Notices;
@@ -34,7 +35,7 @@ import com.nusuk.automator.update.UpdateChecker;
 
 public class MainActivity extends Activity implements KeyRepository.ChangeListener {
 
-    private static final String NUSUK_PACKAGE = "com.moh.nusukapp";
+    private static final String NUSUK_PACKAGE = Links.NUSUK_PACKAGE;
 
     private View permBanner;
     private View rowAccessibility;
@@ -76,17 +77,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         tvQuizReset = findViewById(R.id.tvQuizReset);
 
         // Edge-to-edge (Android 15+): keep hero clear of status bar, content clear of nav bar
-        View hero = findViewById(R.id.hero);
-        View content = findViewById(R.id.footer);
-        int heroTop = hero.getPaddingTop();
-        int contentBottom = content.getPaddingBottom();
-        findViewById(R.id.root).setOnApplyWindowInsetsListener((v, insets) -> {
-            hero.setPadding(hero.getPaddingLeft(), heroTop + insets.getSystemWindowInsetTop(),
-                    hero.getPaddingRight(), hero.getPaddingBottom());
-            content.setPadding(content.getPaddingLeft(), content.getPaddingTop(),
-                    content.getPaddingRight(), contentBottom + insets.getSystemWindowInsetBottom());
-            return insets;
-        });
+        Links.applyInsets(findViewById(R.id.root), findViewById(R.id.hero), findViewById(R.id.footer));
 
         findViewById(R.id.statsStrip).setOnClickListener(v -> startActivity(new Intent(this, StatsActivity.class)));
         tvAppVersion = findViewById(R.id.tvAppVersion);
@@ -196,11 +187,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
             tvAppVersion.setTextColor(0xFFB45309);
             return;
         }
-        String version = "";
-        try {
-            version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-        } catch (Exception ignored) {}
-        tvAppVersion.setText(L.t(this, "Version " + version));
+        tvAppVersion.setText(L.t(this, "Version " + AppInfo.versionName(this)));
         tvAppVersion.setTextColor(getColor(R.color.text_secondary));
     }
 
@@ -337,10 +324,10 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
         startService(overlayIntent);
 
         // Launch Nusuk App
-        Intent launchIntent = getPackageManager().getLaunchIntentForPackage("com.moh.nusukapp");
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(NUSUK_PACKAGE);
         if (launchIntent == null) {
             launchIntent = new Intent();
-            launchIntent.setClassName("com.moh.nusukapp", "com.moh.nusukapp.activity.MainActivity");
+            launchIntent.setClassName(NUSUK_PACKAGE, NUSUK_PACKAGE + ".activity.MainActivity");
         }
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         try {
@@ -468,14 +455,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
 
     /** The Settings switch only; see checkPermissions for why that isn't enough. */
     private boolean isAccessibilitySwitchedOn() {
-        try {
-            String enabledServices = Settings.Secure.getString(getContentResolver(),
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-            if (enabledServices != null && enabledServices.contains(getPackageName())) {
-                return true;
-            }
-        } catch (Exception ignored) {}
-        return false;
+        return AppInfo.isAccessibilitySwitchedOn(this);
     }
 
     @Override

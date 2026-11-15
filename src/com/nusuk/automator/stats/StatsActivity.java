@@ -34,7 +34,7 @@ public class StatsActivity extends ScreenActivity {
         int codesTotal = KeyRepository.getInstance(this).getSuccessCount();
         int quizTotal = Stats.quizTotal(this);
 
-        content.addView(text("This is your own usage on this phone.", 16, 0xFF78716C), lp(-2, -2, 0));
+        content.addView(text("This is your own usage on this phone.", 16, getColor(R.color.text_secondary)), lp(-2, -2, 0));
 
         // ----- today + total -----
         LinearLayout top = new LinearLayout(this);
@@ -67,7 +67,7 @@ public class StatsActivity extends ScreenActivity {
             card.addView(row("Before daily tracking", String.valueOf(olderCodes), String.valueOf(olderQuiz), false));
         }
         if (days.isEmpty() && olderCodes == 0 && olderQuiz == 0) {
-            TextView t = text("Nothing yet. Codes you add and questions the app solves are counted here by day.", 16, 0xFF78716C);
+            TextView t = text("Nothing yet. Codes you add and questions the app solves are counted here by day.", 16, getColor(R.color.text_secondary));
             t.setPadding(0, px(12), 0, px(12));
             card.addView(t);
         }
@@ -78,11 +78,11 @@ public class StatsActivity extends ScreenActivity {
         c.setOrientation(LinearLayout.VERTICAL);
         c.setBackgroundResource(R.drawable.item_card);
         c.setPadding(px(16), px(14), px(16), px(14));
-        TextView v = text(String.valueOf(value), 34, 0xFF1C1917);
+        TextView v = text(String.valueOf(value), 34, getColor(R.color.text_primary));
         v.setTypeface(getResources().getFont(R.font.plex_light));
         c.addView(v);
-        c.addView(text(label, 16, 0xFF1C1917), lp(-2, -2, 2));
-        c.addView(text(sub, 13, 0xFF78716C), lp(-2, -2, 6));
+        c.addView(text(label, 16, getColor(R.color.text_primary)), lp(-2, -2, 2));
+        c.addView(text(sub, 13, getColor(R.color.text_secondary)), lp(-2, -2, 6));
         return c;
     }
 
@@ -90,7 +90,7 @@ public class StatsActivity extends ScreenActivity {
         LinearLayout r = new LinearLayout(this);
         r.setGravity(Gravity.CENTER_VERTICAL);
         r.setMinimumHeight(px(head ? 36 : 48));
-        int color = head ? 0xFF78716C : 0xFF1C1917;
+        int color = head ? getColor(R.color.text_secondary) : getColor(R.color.text_primary);
         float sp = head ? 12 : 15;
         r.addView(text(head ? L.t(this, date).toUpperCase(java.util.Locale.ROOT) : date, sp, color), new LinearLayout.LayoutParams(0, -2, 1));
         r.addView(cell(head ? L.t(this, codes).toUpperCase(java.util.Locale.ROOT) : codes, sp, color), new LinearLayout.LayoutParams(px(64), -2));

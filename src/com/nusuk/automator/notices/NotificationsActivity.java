@@ -68,10 +68,10 @@ public class NotificationsActivity extends ScreenActivity {
             FrameLayout.LayoutParams ip = new FrameLayout.LayoutParams(px(30), px(30), Gravity.CENTER);
             circle.addView(icon(R.drawable.ic_bell_green, 30), ip);
             empty.addView(circle, new LinearLayout.LayoutParams(px(76), px(76)));
-            TextView t = text("No notifications yet", 18, 0xFF1C1917);
+            TextView t = text("No notifications yet", 18, getColor(R.color.text_primary));
             t.setGravity(Gravity.CENTER);
             empty.addView(t, lp(-2, -2, 16));
-            TextView d = text("News and updates we send from the server will be saved here.", 16, 0xFF78716C);
+            TextView d = text("News and updates we send from the server will be saved here.", 16, getColor(R.color.text_secondary));
             d.setGravity(Gravity.CENTER);
             empty.addView(d, lp(-2, -2, 6));
             content.addView(empty, lp(-1, -2, 0));
@@ -101,13 +101,13 @@ public class NotificationsActivity extends ScreenActivity {
         cp.setMarginStart(px(12));
         row.addView(col, cp);
 
-        col.addView(text(n.optString("title", "Nusuk Auto"), 17, 0xFF1C1917));
+        col.addView(text(n.optString("title", "Nusuk Auto"), 17, getColor(R.color.text_primary)));
         String body = n.optString("body", "");
         if (!body.isEmpty()) col.addView(text(body, 16, 0xFF44403C), lp(-2, -2, 4));
         long at = n.optLong("at", 0) * 1000;
         String when = at > 0 ? DateUtils.getRelativeTimeSpanString(at, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS).toString() : "";
         if (link) when += (when.isEmpty() ? "" : "  ·  ") + "Tap to open";
-        if (!when.isEmpty()) col.addView(text(when, 13, 0xFF78716C), lp(-2, -2, 8));
+        if (!when.isEmpty()) col.addView(text(when, 13, getColor(R.color.text_secondary)), lp(-2, -2, 8));
 
         if (link) {
             row.setClickable(true);

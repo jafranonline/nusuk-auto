@@ -34,8 +34,8 @@ import com.nusuk.automator.core.Links;
  */
 public final class UpdateChecker {
     private static final String TAG = "UpdateChecker";
-    static final String VERSION_URL = "https://files-nusuk.minbars.net/version.json";
-    private static final String DEFAULT_URL = "https://nusuk.minbars.net/download";
+    static final String VERSION_URL = Links.FILE_HOST + "version.json";
+    private static final String DEFAULT_URL = Links.SITE_URL + "/download";
     private static final long CHECK_EVERY_MS = 6 * 3600_000L;   // automatic checks
     private static final long SNOOZE_MS = 24 * 3600_000L;       // "Later"
     private static final String PREFS = "update";

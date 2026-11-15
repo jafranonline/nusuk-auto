@@ -37,7 +37,7 @@ public class AutomationService extends AccessibilityService {
     private static final String TAG = "NusukAutoService";
     /** Verbose per-step logging. Off in release: the compiler drops every `if (DEBUG)` block. */
     private static final boolean DEBUG = false;
-    private static final String NUSUK_PKG = "com.moh.nusukapp";
+    private static final String NUSUK_PKG = com.nusuk.automator.core.Links.NUSUK_PACKAGE;
     private static AutomationService instance;
 
     public enum AutomationMode {

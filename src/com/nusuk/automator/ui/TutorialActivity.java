@@ -31,7 +31,7 @@ import com.nusuk.automator.overlay.OverlayService;
  */
 public class TutorialActivity extends Activity {
 
-    private static final String HOST = "nusuk.minbars.net";
+    private static final String HOST = com.nusuk.automator.core.Links.SITE_HOST;
     /** Intent extra: which page to open, "/tutorial" (default) or "/help". */
     static final String EXTRA_PATH = "path";
 
@@ -172,10 +172,7 @@ public class TutorialActivity extends Activity {
 
         setContentView(root);
         String path = "/help".equals(getIntent().getStringExtra(EXTRA_PATH)) ? "/help" : "/tutorial";
-        String version = "";
-        try {
-            version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-        } catch (Exception ignored) {}
+        String version = com.nusuk.automator.core.AppInfo.versionName(this);
         web.loadUrl("https://" + HOST + path + "?app=1&v=" + Uri.encode(version));
     }
 

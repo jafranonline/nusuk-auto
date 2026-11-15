@@ -8,6 +8,7 @@ import android.widget.TextView;
 
 import com.nusuk.automator.R;
 import com.nusuk.automator.codes.AddKeysActivity;
+import com.nusuk.automator.core.AppInfo;
 import com.nusuk.automator.core.L;
 import com.nusuk.automator.core.Links;
 import com.nusuk.automator.overlay.OverlayService;
@@ -38,10 +39,10 @@ public class SettingsActivity extends ScreenActivity {
 
             LinearLayout col = new LinearLayout(SettingsActivity.this);
             col.setOrientation(LinearLayout.VERTICAL);
-            TextView t = text(title, 17, 0xFF1C1917);
+            TextView t = text(title, 17, getColor(R.color.text_primary));
             t.setTypeface(getResources().getFont(R.font.plex_medium));
             col.addView(t);
-            if (desc != null) col.addView(text(desc, 15, 0xFF78716C), lp(-2, -2, 3));
+            if (desc != null) col.addView(text(desc, 15, getColor(R.color.text_secondary)), lp(-2, -2, 3));
             LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, -2, 1);
             cp.setMarginStart(px(12));
             row.addView(col, cp);
@@ -75,9 +76,9 @@ public class SettingsActivity extends ScreenActivity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.addView(text(title, 17, 0xFF1C1917), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(text(title, 17, getColor(R.color.text_primary)), new LinearLayout.LayoutParams(0, -2, 1));
         TextView minus = pill("−", 0, false, 0, () -> step(isMin, -1));
-        TextView val = text("", 17, 0xFF1C1917);
+        TextView val = text("", 17, getColor(R.color.text_primary));
         val.setGravity(Gravity.CENTER);
         val.setTypeface(getResources().getFont(R.font.plex_medium));
         TextView plus = pill("+", 0, false, 0, () -> step(isMin, 1));
@@ -122,12 +123,9 @@ public class SettingsActivity extends ScreenActivity {
 
         LinearLayout names = new LinearLayout(this);
         names.setOrientation(LinearLayout.VERTICAL);
-        names.addView(text("Nusuk Auto", 18, 0xFF1C1917));
-        String v = "";
-        try {
-            v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-        } catch (Exception ignored) {}
-        names.addView(text("Version " + v, 15, 0xFF78716C), lp(-2, -2, 2));
+        names.addView(text("Nusuk Auto", 18, getColor(R.color.text_primary)));
+        String v = AppInfo.versionName(this);
+        names.addView(text("Version " + v, 15, getColor(R.color.text_secondary)), lp(-2, -2, 2));
         LinearLayout.LayoutParams np = new LinearLayout.LayoutParams(0, -2, 1);
         np.setMarginStart(px(14));
         head.addView(names, np);
@@ -234,9 +232,7 @@ public class SettingsActivity extends ScreenActivity {
                 .append(android.os.Build.VERSION.SDK_INT).append(")\n")
          .append("Device: ").append(android.os.Build.MANUFACTURER).append(' ').append(android.os.Build.MODEL).append('\n')
          .append("Language: ").append(L.lang(this)).append("  Pace: ").append(QuizPace.isOn(this) ? "normal " + QuizPace.minSec(this) + "-" + QuizPace.maxSec(this) + "s" : "fast").append('\n');
-        String en = android.provider.Settings.Secure.getString(getContentResolver(),
-                android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-        r.append("Accessibility on: ").append(en != null && en.contains(getPackageName())).append('\n');
+        r.append("Accessibility on: ").append(AppInfo.isAccessibilitySwitchedOn(this)).append('\n');
         java.io.File f = com.nusuk.automator.core.CrashLog.file(this);
         r.append("\n--- recent errors ---\n");
         try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(f, "r")) {
