@@ -69,7 +69,6 @@
                 android:src="@drawable/ic_logo" />
 
             <TextView
-                android:id="@+id/tvOverlayTitle"
                 android:fontFamily="@font/plex_light"
                 android:includeFontPadding="false"
                 android:layout_width="0dp"
