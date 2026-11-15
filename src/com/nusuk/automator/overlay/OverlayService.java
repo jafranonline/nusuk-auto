@@ -32,6 +32,7 @@ public class OverlayService extends Service implements AutomationService.Automat
 
     private void applyHidden() {
         if (overlayView != null) overlayView.setVisibility(appOpen ? View.GONE : View.VISIBLE);
+        publishCover();
     }
 
     public static OverlayService getInstance() {
@@ -117,6 +118,7 @@ public class OverlayService extends Service implements AutomationService.Automat
     public void onDestroy() {
         super.onDestroy();
         instance = null;
+        coverShown = false;
         KeyRepository.getInstance(this).unregisterListener(this);
         AutomationService service = AutomationService.getInstance();
         if (service != null) {
@@ -284,6 +286,7 @@ public class OverlayService extends Service implements AutomationService.Automat
         if (overlayBadge != null) overlayBadge.setOnTouchListener(dragListener);
 
         windowManager.addView(overlayView, params);
+        overlayView.getViewTreeObserver().addOnPreDrawListener(() -> { publishCover(); return true; });
         applyHidden();
         selectMode(AutomationService.AutomationMode.QUIZ); // Default to Quiz since it's the active focus
         selectBatch(savedBatch());
@@ -316,7 +319,7 @@ public class OverlayService extends Service implements AutomationService.Automat
                 if (d >= 0) { v = v * 10 + d; digits++; }
             }
             if (digits > 0) n = v;
-        } catch (Throwable ignored) {}
+        } catch (RuntimeException ignored) {}
         try {
             selectBatch(n);
             etCount.clearFocus();
@@ -324,7 +327,7 @@ public class OverlayService extends Service implements AutomationService.Automat
                     (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
             if (imm != null) imm.hideSoftInputFromWindow(etCount.getWindowToken(), 0);
             setWindowFocusable(false);
-        } catch (Throwable e) {
+        } catch (RuntimeException e) {
             Log.e(TAG, "commitCountInput failed", e);
         }
     }
@@ -384,7 +387,7 @@ public class OverlayService extends Service implements AutomationService.Automat
 
     private int savedBatch() {
         try { return getSharedPreferences("overlay", MODE_PRIVATE).getInt("batch", DEFAULT_BATCH); }
-        catch (Throwable e) { return DEFAULT_BATCH; }
+        catch (RuntimeException e) { return DEFAULT_BATCH; }
     }
 
     /** Tap = one step; hold = repeats, speeding up (10 → 50 → 200 per tick). */
@@ -394,7 +397,7 @@ public class OverlayService extends Service implements AutomationService.Automat
         tick[0] = () -> {
             n[0]++;
             int step = n[0] > 30 ? 200 : n[0] > 12 ? 50 : STEP;
-            selectBatch(selectedBatchCount + dir * step);
+            selectBatch(selectedBatchCount + dir * step, false);
             mainHandler.postDelayed(tick[0], n[0] > 12 ? 60 : 120);
         };
         v.setOnTouchListener((view, e) -> {
@@ -409,16 +412,26 @@ public class OverlayService extends Service implements AutomationService.Automat
                 case MotionEvent.ACTION_CANCEL:
                     mainHandler.removeCallbacks(tick[0]);
                     view.setPressed(false);
+                    saveBatch(selectedBatchCount);
                     return true;
             }
             return true;
         });
     }
 
+    private void saveBatch(int count) {
+        try { getSharedPreferences("overlay", MODE_PRIVATE).edit().putInt("batch", count).apply(); } catch (RuntimeException ignored) {}
+    }
+
     private void selectBatch(int count) {
+        selectBatch(count, true);
+    }
+
+    /** persist=false while a +/- button is held (ticks every ~60 ms); the value is saved on release. */
+    private void selectBatch(int count, boolean persist) {
         count = Math.max(MIN_BATCH, Math.min(MAX_BATCH, count));
         selectedBatchCount = count;
-        try { getSharedPreferences("overlay", MODE_PRIVATE).edit().putInt("batch", count).apply(); } catch (Throwable ignored) {}
+        if (persist) saveBatch(count);
         if (etCount != null && !L.t(this, String.valueOf(count)).contentEquals(etCount.getText())) {
             etCount.setText(L.t(this, String.valueOf(count)));
             etCount.setSelection(etCount.getText().length());
@@ -435,11 +448,22 @@ public class OverlayService extends Service implements AutomationService.Automat
 
     /** True if screen point (x, y) is under the visible overlay. */
     public boolean covers(int x, int y) {
-        if (overlayView == null || !overlayView.isShown()) return false;
+        // Read from the loop thread: uses the rectangle the main thread last published, never the View.
+        return coverShown && x >= coverL && x < coverR && y >= coverT && y < coverB;
+    }
+
+    private volatile boolean coverShown;
+    private volatile int coverL, coverT, coverR, coverB;
+
+    /** Main thread: remember where the overlay is on screen (called after every layout/draw/visibility change). */
+    private void publishCover() {
+        View v = overlayView;
+        if (v == null || !v.isShown()) { coverShown = false; return; }
         int[] loc = new int[2];
-        overlayView.getLocationOnScreen(loc);
-        return x >= loc[0] && x < loc[0] + overlayView.getWidth()
-                && y >= loc[1] && y < loc[1] + overlayView.getHeight();
+        v.getLocationOnScreen(loc);
+        coverL = loc[0]; coverT = loc[1];
+        coverR = loc[0] + v.getWidth(); coverB = loc[1] + v.getHeight();
+        coverShown = true;
     }
 
     /** While true, touches go through the overlay to the app underneath. Reference-counted. */
@@ -462,13 +486,13 @@ public class OverlayService extends Service implements AutomationService.Automat
     private void minimize() {
         if (overlayPanel != null) overlayPanel.setVisibility(View.GONE);
         if (overlayBadge != null) overlayBadge.setVisibility(View.VISIBLE);
-        windowManager.updateViewLayout(overlayView, params);
+        updateLayoutSafely();
     }
 
     private void expand() {
         if (overlayBadge != null) overlayBadge.setVisibility(View.GONE);
         if (overlayPanel != null) overlayPanel.setVisibility(View.VISIBLE);
-        windowManager.updateViewLayout(overlayView, params);
+        updateLayoutSafely();
         // The badge may have been dragged to an edge; keep the full panel on screen
         overlayView.post(() -> {
             DisplayMetrics dm = getResources().getDisplayMetrics();
@@ -479,9 +503,19 @@ public class OverlayService extends Service implements AutomationService.Automat
             if (x != params.x || y != params.y) {
                 params.x = x;
                 params.y = y;
-                windowManager.updateViewLayout(overlayView, params);
+                updateLayoutSafely();
             }
         });
+    }
+
+    /** The view may already be removed (service stopping): never let that crash the app. */
+    private void updateLayoutSafely() {
+        if (windowManager == null || overlayView == null || params == null) return;
+        try {
+            windowManager.updateViewLayout(overlayView, params);
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "updateViewLayout: view is gone", e);
+        }
     }
 
     private void updateUiStats() {
@@ -500,7 +534,7 @@ public class OverlayService extends Service implements AutomationService.Automat
 
     @Override
     public void onProgress(String status, String currentCode, int done, int target, int success, int invalid, int remaining) {
-        Log.i(TAG, "Overlay onProgress -> " + done + "/" + target + " [" + status + "] ✓=" + success + " ✗=" + invalid);
+        Log.d(TAG, "Overlay onProgress -> " + done + "/" + target + " [" + status + "] ✓=" + success + " ✗=" + invalid);
         mainHandler.post(() -> {
             if (tvProgress != null) tvProgress.setText(L.t(this, done + " / " + target));
             mainHandler.removeCallbacks(thinkTick);

@@ -32,7 +32,7 @@ public final class CodeDownloader {
     public static volatile boolean failed = false;
     public static volatile int serverTotal = 0;
     public static volatile Runnable onProgress; // set by the screen that shows progress (any thread)
-    private static long lastDone = 0;
+    private static volatile long lastDone = 0;
 
     private CodeDownloader() {}
 

@@ -60,8 +60,15 @@ public class AutomationService extends AccessibilityService {
     private volatile HandlerThread loopThread = startLoopThread();
     private volatile Handler handler = new Handler(loopThread.getLooper());
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private volatile int loopGen = 0;      // bumped when a stuck loop thread is replaced
     private volatile long loopBeat = 0;     // last time the loop thread ran a task
     private static final long LOOP_STUCK_MS = 8000;
+
+    /** True on a loop thread that was replaced: whatever it was doing must not touch the run any more. */
+    private boolean onStaleLoopThread() {
+        Thread t = Thread.currentThread();
+        return t != loopThread && "nusuk-loop".equals(t.getName());
+    }
 
     private static HandlerThread startLoopThread() {
         HandlerThread t = new HandlerThread("nusuk-loop");
@@ -185,7 +192,9 @@ public class AutomationService extends AccessibilityService {
      * is most likely right after an answer, when Nusuk's screen is changing under us.
      */
     private Runnable safe(Runnable r) {
+        final int gen = loopGen;
         return () -> {
+            if (gen != loopGen || onStaleLoopThread()) return; // posted before the loop thread was replaced
             try {
                 r.run();
             } catch (Throwable t) {
@@ -260,6 +269,7 @@ public class AutomationService extends AccessibilityService {
 
     /** The one place the automation loop is scheduled: at most one pending step. */
     private void reschedule(long delayMs) {
+        if (onStaleLoopThread()) return; // a replaced thread must not schedule on the new loop
         handler.removeCallbacks(loopRunnable);
         loopScheduled = true;
         handler.postDelayed(loopRunnable, Math.max(0, delayMs));
@@ -343,6 +353,7 @@ public class AutomationService extends AccessibilityService {
             if (loopBeat >= asked || !isRunning || instance != this) return;
             Log.e(TAG, "Loop thread stuck for " + LOOP_STUCK_MS + "ms -> replacing it");
             com.nusuk.automator.core.CrashLog.problem("loop thread stuck, replaced");
+            loopGen++;
             HandlerThread old = loopThread;
             HandlerThread fresh = startLoopThread();
             handler = new Handler(fresh.getLooper());
@@ -461,7 +472,7 @@ public class AutomationService extends AccessibilityService {
     }
 
     private void stepLoop() {
-        if (!isRunning || isPaused) return;
+        if (!isRunning || isPaused || onStaleLoopThread()) return;
 
         navThisStep = false;
         if (currentMode == AutomationMode.QUIZ) {
@@ -584,7 +595,11 @@ public class AutomationService extends AccessibilityService {
         return s;
     }
 
+    private android.content.res.Configuration sizedFor; // configuration screenW/screenH were measured under
+
     private void updateScreenSize() {
+        android.content.res.Configuration cfg = getResources().getConfiguration();
+        if (sizedFor != null && sizedFor.diff(cfg) == 0) return; // same rotation/size/density: nothing changed
         try {
             WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
             DisplayMetrics dm = new DisplayMetrics();
@@ -592,6 +607,7 @@ public class AutomationService extends AccessibilityService {
             if (dm.widthPixels > 0 && dm.heightPixels > 0) {
                 screenW = dm.widthPixels;
                 screenH = dm.heightPixels;
+                sizedFor = new android.content.res.Configuration(cfg);
             }
         } catch (Exception ignored) {}
     }

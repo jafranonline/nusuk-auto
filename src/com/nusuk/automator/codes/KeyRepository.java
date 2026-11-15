@@ -223,8 +223,9 @@ public class KeyRepository {
         if (code != null) deferredCodes.add(code.toUpperCase(Locale.US));
     }
 
-    public synchronized void markSuccess(String code) {
-        if (code != null) {
+    public void markSuccess(String code) {
+        if (code == null) return;
+        synchronized (this) {
             String c = code.toUpperCase(Locale.US);
             if (successCodes.add(c)) Stats.codeAdded(context);
             invalidCodes.remove(c);
@@ -235,26 +236,29 @@ public class KeyRepository {
             remainingCache = -1;
             CodeSync.syncSoon(context, CodeSync.PUSH_DELAY_MS);
             saveState();
-            notifyListeners();
         }
+        notifyListeners(); // outside the lock: listeners may call back into the repository
     }
 
     /** Nusuk: "already used" = this account has this code. Skipped from now on, on every phone sync. */
-    public synchronized void markAlready(String code) {
+    public void markAlready(String code) {
         if (code == null) return;
-        String c = code.toUpperCase(Locale.US);
-        if (successCodes.contains(c)) return;
-        invalidCodes.remove(c);
-        pendingInvalid.remove(c);
-        if (alreadyCodes.add(c)) pendingAlready.add(c);
-        remainingCache = -1;
-        CodeSync.syncSoon(context, CodeSync.PUSH_DELAY_MS);
-        saveState();
+        synchronized (this) {
+            String c = code.toUpperCase(Locale.US);
+            if (successCodes.contains(c)) return;
+            invalidCodes.remove(c);
+            pendingInvalid.remove(c);
+            if (alreadyCodes.add(c)) pendingAlready.add(c);
+            remainingCache = -1;
+            CodeSync.syncSoon(context, CodeSync.PUSH_DELAY_MS);
+            saveState();
+        }
         notifyListeners();
     }
 
-    public synchronized void markInvalid(String code) {
-        if (code != null) {
+    public void markInvalid(String code) {
+        if (code == null) return;
+        synchronized (this) {
             String c = code.toUpperCase(Locale.US);
             if (!successCodes.contains(c) && !alreadyCodes.contains(c)) {
                 invalidCodes.add(c);
@@ -263,8 +267,8 @@ public class KeyRepository {
             remainingCache = -1;
             CodeSync.syncSoon(context, CodeSync.PUSH_DELAY_MS);
             saveState();
-            notifyListeners();
         }
+        notifyListeners();
     }
 
     /** Cursor of the code download (server key id); 0 = nothing downloaded yet. */
@@ -273,7 +277,16 @@ public class KeyRepository {
     }
 
     /** Adds a downloaded page (new keys only, letter case ignored) and saves it with the new cursor. */
-    synchronized int appendCodes(List<String> page, long cursor) {
+    int appendCodes(List<String> page, long cursor) {
+        int added;
+        synchronized (this) {
+            added = appendCodesLocked(page, cursor);
+        }
+        if (added > 0) notifyListeners();
+        return added;
+    }
+
+    private int appendCodesLocked(List<String> page, long cursor) {
         if (codeKeys == null) { // built once, kept in step with allCodes afterwards
             codeKeys = new HashSet<>(allCodes.size() * 2 + page.size());
             for (String c : allCodes) codeKeys.add(c.toUpperCase(Locale.US));
@@ -286,7 +299,6 @@ public class KeyRepository {
         remainingCache = -1;
         saveCodes();
         saveState();
-        if (added > 0) notifyListeners();
         return added;
     }
 
@@ -472,17 +484,21 @@ public class KeyRepository {
     }
 
     /** Changes to the shared dead-code list since `deadSince`. */
-    synchronized void onDead(List<String> dead, List<String> alive, long cursor) {
-        if (dead.isEmpty() && alive.isEmpty() && cursor == deadSince) return;
-        for (String c : dead) deadCodes.add(c.toUpperCase(Locale.US));
-        for (String c : alive) deadCodes.remove(c.toUpperCase(Locale.US));
-        deadSince = Math.max(deadSince, cursor);
-        if (!dead.isEmpty() || !alive.isEmpty()) {
-            Log.i(TAG, "Shared dead codes: +" + dead.size() + " -" + alive.size() + " = " + deadCodes.size());
-            remainingCache = -1;
-            notifyListeners();
+    void onDead(List<String> dead, List<String> alive, long cursor) {
+        boolean changed = false;
+        synchronized (this) {
+            if (dead.isEmpty() && alive.isEmpty() && cursor == deadSince) return;
+            for (String c : dead) deadCodes.add(c.toUpperCase(Locale.US));
+            for (String c : alive) deadCodes.remove(c.toUpperCase(Locale.US));
+            deadSince = Math.max(deadSince, cursor);
+            if (!dead.isEmpty() || !alive.isEmpty()) {
+                Log.i(TAG, "Shared dead codes: +" + dead.size() + " -" + alive.size() + " = " + deadCodes.size());
+                remainingCache = -1;
+                changed = true;
+            }
+            saveState();
         }
-        saveState();
+        if (changed) notifyListeners();
     }
 
     synchronized void onPriority(List<String> priority) {
@@ -493,7 +509,14 @@ public class KeyRepository {
     }
 
     /** The server's whole saved history for this phone (e.g. from before a reinstall). */
-    synchronized void onRestored(List<String> serverSuccess, List<String> serverInvalid, List<String> serverAlready) {
+    void onRestored(List<String> serverSuccess, List<String> serverInvalid, List<String> serverAlready) {
+        synchronized (this) {
+            restoreLocked(serverSuccess, serverInvalid, serverAlready);
+        }
+        notifyListeners();
+    }
+
+    private void restoreLocked(List<String> serverSuccess, List<String> serverInvalid, List<String> serverAlready) {
         int before = successCodes.size() + invalidCodes.size() + alreadyCodes.size();
         for (String c : serverSuccess) {
             String u = c.toUpperCase(Locale.US);
@@ -516,6 +539,5 @@ public class KeyRepository {
         Log.i(TAG, "Server backup in sync" + (added > 0 ? ", restored " + added + " tested codes" : ""));
         remainingCache = -1;
         saveState();
-        notifyListeners();
     }
 }
