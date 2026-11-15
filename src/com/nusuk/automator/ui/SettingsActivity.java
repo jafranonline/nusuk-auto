@@ -237,7 +237,7 @@ public class SettingsActivity extends ScreenActivity {
         String en = android.provider.Settings.Secure.getString(getContentResolver(),
                 android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
         r.append("Accessibility on: ").append(en != null && en.contains(getPackageName())).append('\n');
-        java.io.File f = new java.io.File(String.valueOf(getExternalFilesDir(null)), "crash.txt");
+        java.io.File f = com.nusuk.automator.core.CrashLog.file(this);
         r.append("\n--- recent errors ---\n");
         try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(f, "r")) {
             long n = Math.min(raf.length(), 6000);

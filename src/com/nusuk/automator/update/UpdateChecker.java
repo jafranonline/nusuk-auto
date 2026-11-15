@@ -190,7 +190,9 @@ public final class UpdateChecker {
                     .putInt("snoozedCode", info.versionCode)
                     .putLong("snoozedAt", System.currentTimeMillis()).apply());
         }
-        shown = b.show();
+        shown = b.create();
+        shown.setOnDismissListener(d -> { if (shown == d) shown = null; });
+        shown.show();
     }
 
     private static void openDownload(Activity a, Info info) {

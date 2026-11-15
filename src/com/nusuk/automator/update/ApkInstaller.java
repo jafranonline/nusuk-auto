@@ -81,16 +81,26 @@ final class ApkInstaller {
                 .create();
         dlg.show();
 
+        // The download thread must not keep the Activity alive: it only holds weak references.
         final Context app = a.getApplicationContext();
+        final java.lang.ref.WeakReference<AlertDialog> dlgRef = new java.lang.ref.WeakReference<>(dlg);
+        final java.lang.ref.WeakReference<ProgressBar> barRef = new java.lang.ref.WeakReference<>(bar);
+        final java.lang.ref.WeakReference<TextView> statusRef = new java.lang.ref.WeakReference<>(status);
         new Thread(() -> {
             String error = null;
             try {
                 File apk = download(app, info, pct -> main.post(() -> {
-                    bar.setIndeterminate(false);
-                    bar.setProgress(pct);
-                    status.setText(L.t(a, "Downloading...") + " " + L.t(a, pct + "%"));
+                    ProgressBar b = barRef.get();
+                    TextView t = statusRef.get();
+                    if (b != null) { b.setIndeterminate(false); b.setProgress(pct); }
+                    if (t != null) t.setText(L.t(app, "Downloading...") + " " + L.t(app, pct + "%"));
                 }));
-                main.post(() -> { bar.setIndeterminate(true); status.setText(L.t(a, "Installing...")); });
+                main.post(() -> {
+                    ProgressBar b = barRef.get();
+                    TextView t = statusRef.get();
+                    if (b != null) b.setIndeterminate(true);
+                    if (t != null) t.setText(L.t(app, "Installing..."));
+                });
                 install(app, apk);
             } catch (Exception e) {
                 Log.w(TAG, "Update failed: " + e);
@@ -99,8 +109,9 @@ final class ApkInstaller {
             final String err = error;
             main.post(() -> {
                 busy = false;
-                if (dlg.isShowing()) {
-                    try { dlg.dismiss(); } catch (Exception ignored) {}
+                AlertDialog d = dlgRef.get();
+                if (d != null && d.isShowing()) {
+                    try { d.dismiss(); } catch (Exception ignored) {}
                 }
                 if (err != null) {
                     Toast.makeText(app, L.t(app, "Update failed. Try again or download it from the website.") + "\n" + err, Toast.LENGTH_LONG).show();

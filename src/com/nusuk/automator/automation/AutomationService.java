@@ -195,44 +195,6 @@ public class AutomationService extends AccessibilityService {
         };
     }
 
-    /**
-     * Any crash of our app is appended to Android/data/com.nusuk.automator/files/crash.txt
-     * (readable over USB: adb pull /sdcard/Android/data/com.nusuk.automator/files/crash.txt),
-     * then Android's normal crash handling runs.
-     */
-    private static boolean crashRecorderInstalled = false;
-
-    private void installCrashRecorder() {
-        if (crashRecorderInstalled) return;
-        crashRecorderInstalled = true;
-        final Thread.UncaughtExceptionHandler previous = Thread.getDefaultUncaughtExceptionHandler();
-        final java.io.File dir = getExternalFilesDir(null);
-        Thread.setDefaultUncaughtExceptionHandler((thread, e) -> {
-            try {
-                if (dir != null) {
-                    java.io.StringWriter sw = new java.io.StringWriter();
-                    e.printStackTrace(new java.io.PrintWriter(sw));
-                    try (java.io.FileWriter w = new java.io.FileWriter(new java.io.File(dir, "crash.txt"), true)) {
-                        w.write("==== " + new java.util.Date() + " thread=" + thread.getName()
-                                + " mode=" + currentMode + " running=" + isRunning + "\n" + sw + "\n");
-                    }
-                }
-            } catch (Throwable ignored) {}
-            if (previous != null) previous.uncaughtException(thread, e);
-        });
-    }
-
-    /** Appends a line to crash.txt (same file as crashes) for problems we recovered from. */
-    private void recordProblem(String what) {
-        try {
-            java.io.File dir = getExternalFilesDir(null);
-            if (dir == null) return;
-            try (java.io.FileWriter w = new java.io.FileWriter(new java.io.File(dir, "crash.txt"), true)) {
-                w.write("==== " + new java.util.Date() + " " + what + " mode=" + currentMode + "\n");
-            }
-        } catch (Throwable ignored) {}
-    }
-
     // The system Back button closes Nusuk when it lands on Nusuk's own screen, so: at most one
     // press per BACK_COOLDOWN_MS, and every press is logged with its reason.
     private static final long BACK_COOLDOWN_MS = 2500;
@@ -262,7 +224,7 @@ public class AutomationService extends AccessibilityService {
         super.onServiceConnected();
         instance = this;
         Log.i(TAG, "AutomationService connected!");
-        installCrashRecorder();
+        com.nusuk.automator.core.CrashLog.install(this);
         QuizStore.get(this).warmUp(); // create + seed the answer DB off the main thread
         OverlayService overlay = OverlayService.getInstance();
         if (overlay != null) {
@@ -380,7 +342,7 @@ public class AutomationService extends AccessibilityService {
         mainHandler.postDelayed(() -> {
             if (loopBeat >= asked || !isRunning || instance != this) return;
             Log.e(TAG, "Loop thread stuck for " + LOOP_STUCK_MS + "ms -> replacing it");
-            recordProblem("loop thread stuck, replaced");
+            com.nusuk.automator.core.CrashLog.problem("loop thread stuck, replaced");
             HandlerThread old = loopThread;
             HandlerThread fresh = startLoopThread();
             handler = new Handler(fresh.getLooper());
@@ -963,7 +925,7 @@ public class AutomationService extends AccessibilityService {
         lastLoopError = now;
         if (loopErrors >= 10) {
             loopErrors = 0;
-            recordProblem(where + " failed repeatedly: " + t);
+            com.nusuk.automator.core.CrashLog.problem(where + " failed repeatedly: " + t);
             stopAutomation("Something went wrong. Open Nusuk and press Start again.");
             return;
         }
