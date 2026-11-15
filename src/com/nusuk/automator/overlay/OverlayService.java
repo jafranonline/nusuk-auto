@@ -49,7 +49,6 @@ public class OverlayService extends Service implements AutomationService.Automat
     private View overlayHeader;
 
     private TextView tvProgress;
-    private TextView tvSubStats;
     private TextView tvOverlayStatus;
     private TextView tvBadgeCount;
 
@@ -64,7 +63,6 @@ public class OverlayService extends Service implements AutomationService.Automat
     private View btnClose;
     private boolean runningUi = false;
     private View btnPace;
-    private boolean updatingCount = false;
     private boolean moveQueued = false;
     private static final int DEFAULT_BATCH = 300, MIN_BATCH = 1, MAX_BATCH = 8000, STEP = 10;
 
@@ -102,23 +100,6 @@ public class OverlayService extends Service implements AutomationService.Automat
             if ("STOP".equals(action)) {
                 stopSelf();
                 return START_NOT_STICKY;
-            } else if ("START_BATCH".equals(action)) {
-                int count = intent.getIntExtra("count", selectedBatchCount);
-                if (count <= 0) count = DEFAULT_BATCH;
-                selectBatch(count);
-
-                String modeStr = intent.getStringExtra("mode");
-                if ("QUIZ".equalsIgnoreCase(modeStr)) {
-                    selectMode(AutomationService.AutomationMode.QUIZ);
-                } else if ("CODES".equalsIgnoreCase(modeStr)) {
-                    selectMode(AutomationService.AutomationMode.CODES);
-                }
-
-                AutomationService s = AutomationService.getInstance();
-                if (s != null) {
-                    s.registerListener(this);
-                    s.startAutomation(count, selectedMode);
-                }
             } else if ("SET_MODE".equals(action)) {
                 if ("QUIZ".equalsIgnoreCase(intent.getStringExtra("mode"))) {
                     selectMode(AutomationService.AutomationMode.QUIZ);
@@ -126,11 +107,6 @@ public class OverlayService extends Service implements AutomationService.Automat
                     selectMode(AutomationService.AutomationMode.CODES);
                 }
                 expand();
-            } else if ("PAUSE".equals(action)) {
-                AutomationService s = AutomationService.getInstance();
-                if (s != null) {
-                    s.pauseAutomation();
-                }
             }
         }
         updateUiStats();
@@ -166,9 +142,7 @@ public class OverlayService extends Service implements AutomationService.Automat
         overlayView = inflater.inflate(R.layout.overlay_layout, null);
         L.view(this, overlayView);
 
-        int layoutType = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                : WindowManager.LayoutParams.TYPE_PHONE;
+        int layoutType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
         params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -375,7 +349,7 @@ public class OverlayService extends Service implements AutomationService.Automat
         btnAction.setTextColor(0xFF1E3A5C);
     }
 
-    private void setActionRunning(int done, int target) {
+    private void setActionRunning() {
         setRunningUi(true);
         AutomationService s = AutomationService.getInstance();
         if (btnPause != null) btnPause.setText(L.t(this, s != null && s.isPaused() ? "▶  Resume" : "❚❚  Pause"));
@@ -446,10 +420,8 @@ public class OverlayService extends Service implements AutomationService.Automat
         selectedBatchCount = count;
         try { getSharedPreferences("overlay", MODE_PRIVATE).edit().putInt("batch", count).apply(); } catch (Throwable ignored) {}
         if (etCount != null && !L.t(this, String.valueOf(count)).contentEquals(etCount.getText())) {
-            updatingCount = true;
             etCount.setText(L.t(this, String.valueOf(count)));
             etCount.setSelection(etCount.getText().length());
-            updatingCount = false;
         }
 
         AutomationService s = AutomationService.getInstance();
@@ -514,29 +486,11 @@ public class OverlayService extends Service implements AutomationService.Automat
 
     private void updateUiStats() {
         mainHandler.post(() -> {
-            KeyRepository repo = KeyRepository.getInstance(this);
             AutomationService s = AutomationService.getInstance();
-
-            if (selectedMode == AutomationService.AutomationMode.QUIZ) {
-                if (tvSubStats != null && (s == null || !s.isRunning())) {
-                    tvSubStats.setText(L.t(this, "✓ 0   ✗ 0"));
-                }
-                if (s == null || !s.isRunning()) {
-                    setActionIdle();
-                    if (tvBadgeCount != null) {
-                        tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
-                    }
-                }
-            } else {
-                if (tvSubStats != null && (s == null || !s.isRunning())) {
-                    int already = repo.getAlreadyCount();
-                    tvSubStats.setText(L.t(this, "✓ " + repo.getSuccessCount() + "   ✗ " + repo.getInvalidCount() + (already > 0 ? "   ↺ " + already : "")));
-                }
-                if (s == null || !s.isRunning()) {
-                    setActionIdle();
-                    if (tvBadgeCount != null) {
-                        tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
-                    }
+            if (s == null || !s.isRunning()) {
+                setActionIdle();
+                if (tvBadgeCount != null) {
+                    tvBadgeCount.setText(L.t(this, "0 / " + selectedBatchCount));
                 }
             }
 
@@ -549,7 +503,6 @@ public class OverlayService extends Service implements AutomationService.Automat
         Log.i(TAG, "Overlay onProgress -> " + done + "/" + target + " [" + status + "] ✓=" + success + " ✗=" + invalid);
         mainHandler.post(() -> {
             if (tvProgress != null) tvProgress.setText(L.t(this, done + " / " + target));
-            if (tvSubStats != null) tvSubStats.setText(L.t(this, "✓ " + success + "   ✗ " + invalid));
             mainHandler.removeCallbacks(thinkTick);
             if (thinkBar != null) thinkBar.setVisibility(View.GONE);
             if (tvOverlayStatus != null) tvOverlayStatus.setText(L.t(this, status));
@@ -557,7 +510,7 @@ public class OverlayService extends Service implements AutomationService.Automat
             if ("Thinking...".equals(status)) thinkTick.run(); // live countdown until the answer is tapped
 
             if (tvBadgeCount != null) tvBadgeCount.setText(L.t(this, done + " / " + target));
-            setActionRunning(done, target);
+            setActionRunning();
             if (overlayView != null) overlayView.invalidate();
         });
     }
