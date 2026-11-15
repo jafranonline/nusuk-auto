@@ -412,10 +412,8 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     }
 
     private void openOverlaySettings() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + getPackageName())));
-        }
+        startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:" + getPackageName())));
     }
 
     /** The footer credit (name + chevron) opens the Developer page. */
@@ -465,7 +463,7 @@ public class MainActivity extends Activity implements KeyRepository.ChangeListen
     }
 
     private boolean isOverlayGranted() {
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(this);
+        return Settings.canDrawOverlays(this);
     }
 
     /** The Settings switch only; see checkPermissions for why that isn't enough. */

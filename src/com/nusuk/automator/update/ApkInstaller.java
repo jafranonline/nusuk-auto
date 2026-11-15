@@ -45,7 +45,7 @@ final class ApkInstaller {
 
     static void start(Activity a, UpdateChecker.Info info) {
         if (busy) return;
-        if (Build.VERSION.SDK_INT >= 26 && !a.getPackageManager().canRequestPackageInstalls()) {
+        if (!a.getPackageManager().canRequestPackageInstalls()) {
             new AlertDialog.Builder(a)
                     .setTitle(L.t(a, "Allow installing updates"))
                     .setMessage(L.t(a, "Android needs your OK once so Nusuk Auto can install its own updates. Turn on \"Allow from this source\", then come back and tap Update again."))
