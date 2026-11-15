@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.nusuk.automator.R;
-import com.nusuk.automator.core.Access;
+import com.nusuk.automator.core.Http;
 
 /**
  * The APK ships without codes: this pulls the list from the server (/api/app/codes) in pages,
@@ -85,32 +85,8 @@ public final class CodeDownloader {
     }
 
     private static JSONObject post(Context ctx, long after) throws Exception {
-        byte[] bytes = new JSONObject().put("after", after).toString().getBytes(StandardCharsets.UTF_8);
-        HttpURLConnection conn = (HttpURLConnection) new URL(ctx.getString(R.string.api_base) + "/api/app/codes").openConnection();
-        try {
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("X-Device-Id", Access.deviceId(ctx));
-            conn.setConnectTimeout(10_000);
-            conn.setReadTimeout(30_000);
-            conn.setDoOutput(true);
-            conn.setFixedLengthStreamingMode(bytes.length);
-            try (OutputStream os = conn.getOutputStream()) { os.write(bytes); }
-            int status = conn.getResponseCode();
-            InputStream in = status < 400 ? conn.getInputStream() : conn.getErrorStream();
-            StringBuilder sb = new StringBuilder();
-            if (in != null) {
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    char[] buf = new char[16384];
-                    int n;
-                    while ((n = br.read(buf)) > 0) sb.append(buf, 0, n);
-                }
-            }
-            if (status != 200) throw new Exception("HTTP " + status);
-            return new JSONObject(sb.toString());
-        } finally {
-            conn.disconnect();
-        }
+        Http.Response r = Http.postJson(ctx, "/api/app/codes", new JSONObject().put("after", after), 10_000, 30_000);
+        if (r.status != 200) throw new Exception("HTTP " + r.status);
+        return new JSONObject(r.body);
     }
 }

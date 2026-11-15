@@ -20,7 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.nusuk.automator.R;
-import com.nusuk.automator.core.Access;
+import com.nusuk.automator.core.Http;
 
 /**
  * Talks to the Play Quiz API. Every call carries this phone's device id. The server decides who
@@ -54,39 +54,15 @@ public class QuizSolver {
     }
 
     static Result post(Context ctx, String path, JSONObject payload, int timeoutMs) throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(base(ctx) + path).openConnection();
+        Http.Response h = Http.postJson(ctx, path, payload, timeoutMs, timeoutMs + 4000);
+        Result r = new Result();
+        r.status = h.status;
         try {
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("X-Device-Id", Access.deviceId(ctx));
-            conn.setConnectTimeout(timeoutMs);
-            conn.setReadTimeout(timeoutMs + 4000);
-            conn.setDoOutput(true);
-            byte[] bytes = payload.toString().getBytes(StandardCharsets.UTF_8);
-            conn.setFixedLengthStreamingMode(bytes.length);
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(bytes);
-            }
-            Result r = new Result();
-            r.status = conn.getResponseCode();
-            InputStream in = r.status < 400 ? conn.getInputStream() : conn.getErrorStream();
-            StringBuilder sb = new StringBuilder();
-            if (in != null) {
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = br.readLine()) != null) sb.append(line);
-                }
-            }
-            try {
-                r.body = new JSONObject(sb.toString());
-            } catch (Exception e) {
-                r.body = new JSONObject();
-            }
-            return r;
-        } finally {
-            conn.disconnect();
+            r.body = new JSONObject(h.body);
+        } catch (Exception e) {
+            r.body = new JSONObject();
         }
+        return r;
     }
 
     /** A refusal the app should act on (has a "code"), as opposed to a transient error. */

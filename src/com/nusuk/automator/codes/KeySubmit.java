@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.nusuk.automator.R;
-import com.nusuk.automator.core.Access;
+import com.nusuk.automator.core.Http;
 
 /**
  * Users adding their own keys. {@link #parse} pulls keys out of any pasted text (no special format),
@@ -98,36 +98,13 @@ final class KeySubmit {
     }
 
     private static JSONObject post(Context ctx, List<String> keys) throws Exception {
-        byte[] bytes = new JSONObject().put("keys", new JSONArray(keys)).toString().getBytes(StandardCharsets.UTF_8);
-        HttpURLConnection conn = (HttpURLConnection) new URL(ctx.getString(R.string.api_base) + "/api/app/keys").openConnection();
-        try {
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("X-Device-Id", Access.deviceId(ctx));
-            conn.setConnectTimeout(10_000);
-            conn.setReadTimeout(20_000);
-            conn.setDoOutput(true);
-            conn.setFixedLengthStreamingMode(bytes.length);
-            try (OutputStream os = conn.getOutputStream()) { os.write(bytes); }
-            int status = conn.getResponseCode();
-            InputStream in = status < 400 ? conn.getInputStream() : conn.getErrorStream();
-            StringBuilder sb = new StringBuilder();
-            if (in != null) {
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = br.readLine()) != null) sb.append(line);
-                }
-            }
-            if (status == 429 || status == 413) {
-                String msg = "Too many requests, try again later.";
-                try { msg = new JSONObject(sb.toString()).optString("error", msg); } catch (Exception ignored) {}
-                throw new ServerError(msg);
-            }
-            if (status != 200) throw new ServerError("SERVER " + status);
-            return new JSONObject(sb.toString());
-        } finally {
-            conn.disconnect();
+        Http.Response r = Http.postJson(ctx, "/api/app/keys", new JSONObject().put("keys", new JSONArray(keys)), 10_000, 20_000);
+        if (r.status == 429 || r.status == 413) {
+            String msg = "Too many requests, try again later.";
+            try { msg = new JSONObject(r.body).optString("error", msg); } catch (Exception ignored) {}
+            throw new ServerError(msg);
         }
+        if (r.status != 200) throw new ServerError("SERVER " + r.status);
+        return new JSONObject(r.body);
     }
 }

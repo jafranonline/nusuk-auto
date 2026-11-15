@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 
 import com.nusuk.automator.R;
 import com.nusuk.automator.core.Access;
+import com.nusuk.automator.core.Http;
 import com.nusuk.automator.core.Links;
 
 /**
@@ -213,33 +214,8 @@ public final class Notices {
     }
 
     private static JSONObject post(Context c, long since) throws Exception {
-        byte[] bytes = new JSONObject().put("since", since).toString().getBytes(StandardCharsets.UTF_8);
-        HttpURLConnection conn = (HttpURLConnection) new URL(c.getString(R.string.api_base) + "/api/app/notices").openConnection();
-        try {
-            conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-            conn.setRequestProperty("Accept", "application/json");
-            conn.setRequestProperty("X-Device-Id", Access.deviceId(c));
-            conn.setConnectTimeout(10_000);
-            conn.setReadTimeout(15_000);
-            conn.setDoOutput(true);
-            conn.setFixedLengthStreamingMode(bytes.length);
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(bytes);
-            }
-            int status = conn.getResponseCode();
-            InputStream in = status < 400 ? conn.getInputStream() : conn.getErrorStream();
-            StringBuilder sb = new StringBuilder();
-            if (in != null) {
-                try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = br.readLine()) != null) sb.append(line);
-                }
-            }
-            if (status != 200) throw new Exception("HTTP " + status + " " + sb);
-            return new JSONObject(sb.toString());
-        } finally {
-            conn.disconnect();
-        }
+        Http.Response r = Http.postJson(c, "/api/app/notices", new JSONObject().put("since", since), 10_000, 15_000);
+        if (r.status != 200) throw new Exception("HTTP " + r.status + " " + r.body);
+        return new JSONObject(r.body);
     }
 }

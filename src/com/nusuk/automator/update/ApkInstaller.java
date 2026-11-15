@@ -175,9 +175,7 @@ final class ApkInstaller {
                 int n;
                 while ((n = in.read(buf)) > 0) md.update(buf, 0, n);
             }
-            StringBuilder sb = new StringBuilder();
-            for (byte b : md.digest()) sb.append(String.format("%02x", b));
-            if (!sb.toString().equalsIgnoreCase(info.sha256)) throw new Exception("file check failed");
+            if (!com.nusuk.automator.core.Hex.of(md.digest()).equalsIgnoreCase(info.sha256)) throw new Exception("file check failed");
         }
     }
 
@@ -204,9 +202,7 @@ final class ApkInstaller {
         java.util.Set<String> out = new java.util.HashSet<>();
         if (sigs == null) return out;
         for (android.content.pm.Signature s : sigs) {
-            StringBuilder sb = new StringBuilder();
-            for (byte b : MessageDigest.getInstance("SHA-256").digest(s.toByteArray())) sb.append(String.format("%02x", b));
-            out.add(sb.toString());
+            out.add(com.nusuk.automator.core.Hex.sha256(s.toByteArray()));
         }
         return out;
     }

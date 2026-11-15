@@ -33,20 +33,10 @@ public final class Access {
             raw = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.ANDROID_ID);
         } catch (Exception ignored) {}
         if (raw == null || raw.isEmpty() || "9774d56d682e549c".equals(raw)) raw = UUID.randomUUID().toString();
-        String id = sha256Hex("nusuk-quiz:" + raw);
+        String id = Hex.sha256(("nusuk-quiz:" + raw).getBytes(StandardCharsets.UTF_8));
         p.edit().putString("device", id).apply();
         return id;
     }
 
 
-    private static String sha256Hex(String s) {
-        try {
-            byte[] d = MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder();
-            for (byte b : d) sb.append(String.format("%02x", b));
-            return sb.toString();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
