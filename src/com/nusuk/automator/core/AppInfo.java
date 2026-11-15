@@ -5,7 +5,6 @@ import android.content.Context;
 import android.provider.Settings;
 import android.text.TextUtils;
 
-import com.nusuk.automator.automation.AutomationService;
 
 /** Small facts about this install that several screens need. */
 public final class AppInfo {
@@ -26,7 +25,7 @@ public final class AppInfo {
         try {
             String enabled = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
             if (TextUtils.isEmpty(enabled)) return false;
-            ComponentName ours = new ComponentName(c, AutomationService.class);
+            ComponentName ours = new ComponentName(c, com.nusuk.automator.NusukAccessibilityService.class);
             TextUtils.SimpleStringSplitter sp = new TextUtils.SimpleStringSplitter(':');
             sp.setString(enabled);
             while (sp.hasNext()) {
