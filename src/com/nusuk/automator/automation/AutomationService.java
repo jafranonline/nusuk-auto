@@ -889,6 +889,7 @@ public class AutomationService extends AccessibilityService {
                     public void onSuccess(String answer, boolean cached) {
                         if (req != quizReq || !isRunning) return; // stale reply (timed out, stopped, next question)
                         int matchIdx = findBestMatchingOption(answer, currentOpts);
+                        if (matchIdx < 0) { onError("unusable server answer: '" + answer + "'"); return; }
                         Log.i(TAG, "Server answer -> Option " + matchIdx + " (cached=" + cached + ")");
                         notifyProgress("Selected: " + currentOpts.get(matchIdx));
                         lastAnswer = currentOpts.get(matchIdx);
@@ -1353,8 +1354,9 @@ public class AutomationService extends AccessibilityService {
     }
 
     private int findBestMatchingOption(String answer, List<String> options) {
-        if (answer == null || options == null || options.isEmpty()) return 0;
+        if (answer == null || options == null || options.isEmpty()) return -1;
         String cleanAns = normalizeText(answer);
+        if (cleanAns.isEmpty()) return -1;
 
         // 1. Exact match
         for (int i = 0; i < options.size(); i++) {
@@ -1366,14 +1368,14 @@ public class AutomationService extends AccessibilityService {
         // 2. Substring match
         for (int i = 0; i < options.size(); i++) {
             String cleanOpt = normalizeText(options.get(i));
-            if (cleanOpt.contains(cleanAns) || cleanAns.contains(cleanOpt)) {
+            if (!cleanOpt.isEmpty() && (cleanOpt.contains(cleanAns) || cleanAns.contains(cleanOpt))) {
                 return i;
             }
         }
 
         // 3. Word overlap match
-        int bestIdx = 0;
-        int maxOverlap = -1;
+        int bestIdx = -1;
+        int maxOverlap = 0;
         String[] ansWords = cleanAns.toLowerCase(java.util.Locale.ROOT).split("\\s+");
         for (int i = 0; i < options.size(); i++) {
             String optLower = normalizeText(options.get(i)).toLowerCase(java.util.Locale.ROOT);
