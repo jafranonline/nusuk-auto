@@ -160,12 +160,15 @@ final class ApkInstaller {
         }
     }
 
-    /** The file must be this app, at the announced (higher) version, and match the published checksum if there is one. */
+    /** The file must be this app, at the announced (higher) version, match the published checksum,
+     *  and be signed with the same key as the installed app. */
     private static void check(Context app, File apk, UpdateChecker.Info info) throws Exception {
         android.content.pm.PackageInfo pi = app.getPackageManager().getPackageArchiveInfo(apk.getAbsolutePath(), 0);
         if (pi == null || !app.getPackageName().equals(pi.packageName)) throw new Exception("not a Nusuk Auto update file");
         if (pi.versionCode <= UpdateChecker.currentVersionCode(app)) throw new Exception("no newer version in the file");
-        if (info.sha256 != null && !info.sha256.isEmpty()) {
+        if (info.sha256 == null || info.sha256.isEmpty()) throw new Exception("no checksum published");
+        checkSigner(app, apk);
+        {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             try (InputStream in = new FileInputStream(apk)) {
                 byte[] buf = new byte[64 * 1024];
@@ -176,6 +179,36 @@ final class ApkInstaller {
             for (byte b : md.digest()) sb.append(String.format("%02x", b));
             if (!sb.toString().equalsIgnoreCase(info.sha256)) throw new Exception("file check failed");
         }
+    }
+
+    /** Same signing certificate(s) as the running app, so only an APK signed by us is ever installed. */
+    @SuppressWarnings("deprecation")
+    private static void checkSigner(Context app, File apk) throws Exception {
+        PackageManager pm = app.getPackageManager();
+        android.content.pm.Signature[] mine, theirs;
+        if (Build.VERSION.SDK_INT >= 28) {
+            android.content.pm.PackageInfo cur = pm.getPackageInfo(app.getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+            android.content.pm.PackageInfo upd = pm.getPackageArchiveInfo(apk.getAbsolutePath(), PackageManager.GET_SIGNING_CERTIFICATES);
+            mine = cur.signingInfo == null ? null : cur.signingInfo.getApkContentsSigners();
+            theirs = upd == null || upd.signingInfo == null ? null : upd.signingInfo.getApkContentsSigners();
+        } else {
+            mine = pm.getPackageInfo(app.getPackageName(), PackageManager.GET_SIGNATURES).signatures;
+            android.content.pm.PackageInfo upd = pm.getPackageArchiveInfo(apk.getAbsolutePath(), PackageManager.GET_SIGNATURES);
+            theirs = upd == null ? null : upd.signatures;
+        }
+        if (!certDigests(mine).equals(certDigests(theirs)) || certDigests(mine).isEmpty())
+            throw new Exception("update is not signed by Nusuk Auto");
+    }
+
+    private static java.util.Set<String> certDigests(android.content.pm.Signature[] sigs) throws Exception {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (sigs == null) return out;
+        for (android.content.pm.Signature s : sigs) {
+            StringBuilder sb = new StringBuilder();
+            for (byte b : MessageDigest.getInstance("SHA-256").digest(s.toByteArray())) sb.append(String.format("%02x", b));
+            out.add(sb.toString());
+        }
+        return out;
     }
 
     private static void install(Context app, File apk) throws Exception {

@@ -20,13 +20,28 @@ public final class Links {
 
     private Links() {}
 
+    /** Sites a link sent by the server (announcements, group link, update page) may open. A link to
+     *  anywhere else is ignored, so a hijacked server cannot push users to a phishing page. */
+    private static final String[] TRUSTED_HOSTS = {
+            "minbars.net", "facebook.com", "fb.com", "fb.me", "github.com", "jafran.dev", "alfitan.com",
+            "play.google.com", "youtube.com", "youtu.be", "wa.me", "whatsapp.com", "t.me"};
+
+    public static boolean isTrusted(String url) {
+        if (url == null || !url.startsWith("https://")) return false;
+        String host = Uri.parse(url).getHost();
+        if (host == null) return false;
+        host = host.toLowerCase(java.util.Locale.ROOT);
+        for (String h : TRUSTED_HOSTS) if (host.equals(h) || host.endsWith("." + h)) return true;
+        return false;
+    }
+
     private static SharedPreferences prefs(Context c) {
         return c.getApplicationContext().getSharedPreferences("links", Context.MODE_PRIVATE);
     }
 
     /** Remembers the admin's group link from the server so every screen uses it. */
     public static void saveGroupUrl(Context c, String url) {
-        if (url != null && url.startsWith("https://")) prefs(c).edit().putString("group", url).apply();
+        if (isTrusted(url)) prefs(c).edit().putString("group", url).apply();
     }
 
     public static String groupUrl(Context c) {

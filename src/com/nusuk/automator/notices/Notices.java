@@ -28,6 +28,7 @@ import java.util.concurrent.Executors;
 
 import com.nusuk.automator.R;
 import com.nusuk.automator.core.Access;
+import com.nusuk.automator.core.Links;
 
 /**
  * Announcements sent from the admin page (/admin -> Notifications), shown as system notifications.
@@ -61,13 +62,14 @@ public final class Notices {
         JobScheduler js = c.getSystemService(JobScheduler.class);
         if (js == null) return;
         // A job saved by an older version can still point at NoticeJob's old class name, which no
-        // longer exists: that one never runs, so it is replaced (same id) instead of kept.
+        // longer exists, or be persisted across reboots (needed RECEIVE_BOOT_COMPLETED, now dropped):
+        // either one is replaced (same id) instead of kept. App open re-schedules after a reboot.
         JobInfo pending = js.getPendingJob(JOB_ID);
-        if (pending != null && NoticeJob.class.getName().equals(pending.getService().getClassName())) return;
+        if (pending != null && !pending.isPersisted()
+                && NoticeJob.class.getName().equals(pending.getService().getClassName())) return;
         JobInfo job = new JobInfo.Builder(JOB_ID, new ComponentName(c, NoticeJob.class))
                 .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
                 .setPeriodic(PERIOD_MS)
-                .setPersisted(true)
                 .build();
         int r = js.schedule(job);
         Log.i(TAG, "Background check scheduled: " + (r == JobScheduler.RESULT_SUCCESS));
@@ -185,7 +187,7 @@ public final class Notices {
         int id = (int) n.optLong("id");
 
         Intent tap;
-        if (url.startsWith("https://")) {
+        if (Links.isTrusted(url)) {
             tap = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
         } else {
             tap = new Intent(c, NotificationsActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);

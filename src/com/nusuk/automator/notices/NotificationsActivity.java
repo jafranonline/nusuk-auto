@@ -83,7 +83,7 @@ public class NotificationsActivity extends ScreenActivity {
     private void addItem(JSONObject n, int index) {
         boolean unread = n.optLong("id") > readUpTo;
         String url = n.optString("url", "");
-        boolean link = url.startsWith("https://");
+        boolean link = Links.isTrusted(url);
 
         LinearLayout row = new LinearLayout(this);
         row.setBackgroundResource(unread ? R.drawable.item_card_unread : R.drawable.item_card);

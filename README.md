@@ -140,8 +140,8 @@ English and Bangla, and the [Help page](https://nusuk.minbars.net/help) has fixe
 | Accessibility service | Read the Nusuk screen and tap on it. Limited to the Nusuk app. |
 | Display over other apps | The floating widget. |
 | Internet, network state | Code list, quiz answers, updates, announcements. |
-| Install packages | Lets the app install its own update. |
-| Notifications, run at startup | Announcements, checked about every 15 minutes. |
+| Install packages | Lets the app install its own update. The download must match the published SHA-256 and be signed with the same key as the installed app, or it is refused. |
+| Notifications | Announcements, checked about every 15 minutes while the phone is on (after a restart, from the next time the app is opened). |
 
 What the app does **not** do:
 

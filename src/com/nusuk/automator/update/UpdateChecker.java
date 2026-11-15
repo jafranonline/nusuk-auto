@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.nusuk.automator.core.L;
+import com.nusuk.automator.core.Links;
 
 /**
  * New-version check. publish.sh uploads version.json next to the APK:
@@ -194,7 +195,7 @@ public final class UpdateChecker {
 
     private static void openDownload(Activity a, Info info) {
         try {
-            a.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(info.url != null && info.url.startsWith("https://") ? info.url : DEFAULT_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            a.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(Links.isTrusted(info.url) ? info.url : DEFAULT_URL)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             Toast.makeText(a, L.t(a, "When the download finishes, open it and tap Update."), Toast.LENGTH_LONG).show();
         } catch (Exception e) {
             Toast.makeText(a, info.url, Toast.LENGTH_LONG).show();
